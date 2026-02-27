@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter pub get)",
+      "Bash(flutter build web --no-tree-shake-icons)",
+      "Bash(cmd /c \"flutter --version\")",
+      "Bash(powershell -Command \"flutter --version\")",
+      "Bash(powershell -Command \"Get-Command flutter -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source\")",
+      "Bash(powershell -Command \"ls ''C:\\\\Users\\\\kyosh'' | Select-Object Name\")",
+      "Bash(\"C:/Users/kyosh/flutter/bin/flutter\" build web --no-tree-shake-icons)",
+      "Bash(\"C:/Users/kyosh/flutter/bin/flutter\" devices)"
+    ]
+  }
+}
