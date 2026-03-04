@@ -9,6 +9,7 @@ extension type _JSStorage(JSObject _) implements JSObject {
 external _JSStorage get _localStorage;
 
 const _key = 'pokemon_caught';
+const _shinyKey = 'pokemon_caught_shiny';
 
 /// ブラウザの localStorage を使ったデータ永続化サービス
 class StorageService {
@@ -27,6 +28,24 @@ class StorageService {
   static void saveCaughtNames(List<String> names) {
     try {
       _localStorage.setItem(_key, names.join(','));
+    } catch (_) {}
+  }
+
+  /// 色違いをゲット済みのカタカナ名セットを読み込む
+  static Set<String> loadShinyCaughtNames() {
+    try {
+      final raw = _localStorage.getItem(_shinyKey)?.toDart ?? '';
+      if (raw.isEmpty) return {};
+      return raw.split(',').where((s) => s.isNotEmpty).toSet();
+    } catch (_) {
+      return {};
+    }
+  }
+
+  /// 色違いをゲット済みのカタカナ名セットを保存する
+  static void saveShinyCaughtNames(Set<String> names) {
+    try {
+      _localStorage.setItem(_shinyKey, names.join(','));
     } catch (_) {}
   }
 }

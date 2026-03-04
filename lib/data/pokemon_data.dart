@@ -20,6 +20,11 @@ class PokemonEntry {
   String get imageUrl =>
       'https://raw.githubusercontent.com/PokeAPI/sprites/master'
       '/sprites/pokemon/other/official-artwork/$pokedexId.png';
+
+  /// 色違いアートワーク URL
+  String get shinyImageUrl =>
+      'https://raw.githubusercontent.com/PokeAPI/sprites/master'
+      '/sprites/pokemon/other/official-artwork/shiny/$pokedexId.png';
 }
 
 /// カタカナ1文字あたりのストローク数（濁音・半濁音・小文字・長音符含む）

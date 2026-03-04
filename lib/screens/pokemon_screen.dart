@@ -8,9 +8,19 @@ import '../services/sound_service.dart';
 import '../services/storage_service.dart';
 import '../widgets/drawing_canvas.dart';
 
+enum PokemonPlayMode { katakana, katakanaHard, hiragana, hiraganaHard }
+
+extension PokemonPlayModeX on PokemonPlayMode {
+  bool get isHiragana =>
+      this == PokemonPlayMode.hiragana || this == PokemonPlayMode.hiraganaHard;
+  bool get isHard =>
+      this == PokemonPlayMode.katakanaHard ||
+      this == PokemonPlayMode.hiraganaHard;
+}
+
 class PokemonScreen extends StatefulWidget {
-  final bool hiraganaMode;
-  const PokemonScreen({super.key, this.hiraganaMode = false});
+  final PokemonPlayMode mode;
+  const PokemonScreen({super.key, this.mode = PokemonPlayMode.katakana});
 
   @override
   State<PokemonScreen> createState() => _PokemonScreenState();
@@ -23,30 +33,33 @@ class _PokemonScreenState extends State<PokemonScreen> {
   bool _showCatchOverlay = false;
   final List<PokemonEntry> _caughtPokemon = [];
   bool _advancing = false;
-  int _sessionId = 0; // ValueKey 用：変わると DrawingCanvas が新規作成される
+  int _sessionId = 0;
   bool _showHint = false;
   int _streak = 0;
+  bool _isShiny = false;
+  final Set<String> _shinyCaughtNames = {};
 
   final _random = math.Random();
   int _prevPokemonIndex = -1;
 
   List<String> get _currentChars =>
-      widget.hiraganaMode ? _pokemon.hiraganaChars : _pokemon.chars;
+      widget.mode.isHiragana ? _pokemon.hiraganaChars : _pokemon.chars;
 
   @override
   void initState() {
     super.initState();
-    // localStorage からゲット済みポケモンを復元
     final lookup = {for (final p in pokemonList) p.katakana: p};
     final saved = StorageService.loadCaughtNames();
     for (final name in saved) {
       final entry = lookup[name];
       if (entry != null) _caughtPokemon.add(entry);
     }
+    _shinyCaughtNames.addAll(StorageService.loadShinyCaughtNames());
 
     final idx = _random.nextInt(pokemonList.length);
     _prevPokemonIndex = idx;
     _pokemon = pokemonList[idx];
+    _isShiny = widget.mode.isHard && _random.nextDouble() < 0.1;
   }
 
   void _pickNewPokemon() {
@@ -58,6 +71,7 @@ class _PokemonScreenState extends State<PokemonScreen> {
     setState(() {
       _sessionId++;
       _pokemon = pokemonList[idx];
+      _isShiny = widget.mode.isHard && _random.nextDouble() < 0.1;
       _charIndex = 0;
       _scores.clear();
       _showCatchOverlay = false;
@@ -72,7 +86,7 @@ class _PokemonScreenState extends State<PokemonScreen> {
       _scores.clear();
       _showCatchOverlay = false;
       _advancing = false;
-      _streak = 0; // リトライでストリークリセット
+      _streak = 0;
     });
   }
 
@@ -108,13 +122,16 @@ class _PokemonScreenState extends State<PokemonScreen> {
         SoundService.playCatch();
         setState(() {
           _caughtPokemon.add(_pokemon);
+          if (_isShiny) _shinyCaughtNames.add(_pokemon.katakana);
           _showCatchOverlay = true;
           _advancing = false;
           _streak++;
         });
-        // localStorage に保存
         StorageService.saveCaughtNames(
             _caughtPokemon.map((p) => p.katakana).toList());
+        if (_isShiny) {
+          StorageService.saveShinyCaughtNames(_shinyCaughtNames);
+        }
       });
     }
   }
@@ -123,7 +140,7 @@ class _PokemonScreenState extends State<PokemonScreen> {
   Widget build(BuildContext context) {
     final chars = _currentChars;
     final currentChar = chars[_charIndex];
-    final strokeCount = widget.hiraganaMode
+    final strokeCount = widget.mode.isHiragana
         ? hiraganaStrokeCountFor(currentChar)
         : strokeCountFor(currentChar);
 
@@ -137,7 +154,9 @@ class _PokemonScreenState extends State<PokemonScreen> {
             child: _LeftPanel(
               pokemon: _pokemon,
               caughtPokemon: _caughtPokemon,
+              shinyCaughtNames: _shinyCaughtNames,
               streak: _streak,
+              isShiny: _isShiny,
               onBack: () => Navigator.pop(context),
             ),
           ),
@@ -158,17 +177,22 @@ class _PokemonScreenState extends State<PokemonScreen> {
                       ),
                       const SizedBox(height: 6),
                       // ふりがな ＋ ヒントボタン
+                      // ハードモードでは非表示（ヒント中のみ表示）
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
-                            widget.hiraganaMode
-                                ? _pokemon.katakana
-                                : _pokemon.hiragana,
-                            style: const TextStyle(
-                              fontSize: 20,
-                              color: AppTheme.textGray,
-                              letterSpacing: 6,
+                          AnimatedOpacity(
+                            opacity: widget.mode.isHard && !_showHint ? 0.0 : 1.0,
+                            duration: const Duration(milliseconds: 300),
+                            child: Text(
+                              widget.mode.isHiragana
+                                  ? _pokemon.katakana
+                                  : _pokemon.hiragana,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                color: AppTheme.textGray,
+                                letterSpacing: 6,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -198,6 +222,7 @@ class _PokemonScreenState extends State<PokemonScreen> {
                     pokemon: _pokemon,
                     scores: List.unmodifiable(_scores),
                     streak: _streak,
+                    isShiny: _isShiny,
                     onNext: _pickNewPokemon,
                     onRetry: _retrySamePokemon,
                   ),
@@ -220,13 +245,17 @@ class _PokemonScreenState extends State<PokemonScreen> {
 class _LeftPanel extends StatelessWidget {
   final PokemonEntry pokemon;
   final List<PokemonEntry> caughtPokemon;
+  final Set<String> shinyCaughtNames;
   final int streak;
+  final bool isShiny;
   final VoidCallback onBack;
 
   const _LeftPanel({
     required this.pokemon,
     required this.caughtPokemon,
+    required this.shinyCaughtNames,
     required this.streak,
+    required this.isShiny,
     required this.onBack,
   });
 
@@ -261,14 +290,31 @@ class _LeftPanel extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // ポケモン画像（読込中はポケボールを表示）
+          // ポケモン画像（色違いバッジ付き）
           Center(
-            child: _PokemonImage(pokemon: pokemon, size: 130),
+            child: Stack(
+              alignment: Alignment.topRight,
+              children: [
+                _PokemonImage(pokemon: pokemon, size: 130, isShiny: isShiny),
+                if (isShiny)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFD700),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Text('✨いろちがい',
+                        style: TextStyle(
+                            fontSize: 10, fontWeight: FontWeight.bold)),
+                  ),
+              ],
+            ),
           ),
           const SizedBox(height: 10),
 
-          const Text(
-            'ポケモンのなまえを\nなぞろう！',
+          Text(
+            isShiny ? 'いろちがいが\nあらわれた！' : 'ポケモンのなまえを\nなぞろう！',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 15,
@@ -310,6 +356,7 @@ class _LeftPanel extends StatelessWidget {
                               context: context,
                               builder: (_) => _PokedexDialog(
                                 caughtPokemon: List.unmodifiable(caughtPokemon),
+                                shinyCaughtNames: shinyCaughtNames,
                               ),
                             ),
                     borderRadius: BorderRadius.circular(8),
@@ -398,8 +445,10 @@ class _MusicToggleButtonState extends State<_MusicToggleButton> {
 class _PokemonImage extends StatelessWidget {
   final PokemonEntry pokemon;
   final double size;
+  final bool isShiny;
 
-  const _PokemonImage({required this.pokemon, required this.size});
+  const _PokemonImage(
+      {required this.pokemon, required this.size, this.isShiny = false});
 
   @override
   Widget build(BuildContext context) {
@@ -407,7 +456,7 @@ class _PokemonImage extends StatelessWidget {
       width: size,
       height: size,
       child: Image.network(
-        pokemon.imageUrl,
+        isShiny ? pokemon.shinyImageUrl : pokemon.imageUrl,
         width: size,
         height: size,
         fit: BoxFit.contain,
@@ -570,6 +619,7 @@ class _CatchOverlay extends StatefulWidget {
   final PokemonEntry pokemon;
   final List<int> scores;
   final int streak;
+  final bool isShiny;
   final VoidCallback onNext;
   final VoidCallback onRetry;
 
@@ -577,6 +627,7 @@ class _CatchOverlay extends StatefulWidget {
     required this.pokemon,
     required this.scores,
     required this.streak,
+    required this.isShiny,
     required this.onNext,
     required this.onRetry,
   });
@@ -669,7 +720,10 @@ class _CatchOverlayState extends State<_CatchOverlay>
                       height: 150,
                       child: Stack(
                         children: [
-                          _PokemonImage(pokemon: widget.pokemon, size: 150),
+                          _PokemonImage(
+                              pokemon: widget.pokemon,
+                              size: 150,
+                              isShiny: widget.isShiny),
                           Positioned(
                             bottom: 0,
                             right: 0,
@@ -678,6 +732,23 @@ class _CatchOverlayState extends State<_CatchOverlay>
                               child: _Pokeball(color: color, size: 40),
                             ),
                           ),
+                          if (widget.isShiny)
+                            Positioned(
+                              top: 0,
+                              left: 0,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFD700),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Text('✨いろちがい',
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold)),
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -791,8 +862,12 @@ class _CatchOverlayState extends State<_CatchOverlay>
 
 class _PokedexDialog extends StatefulWidget {
   final List<PokemonEntry> caughtPokemon;
+  final Set<String> shinyCaughtNames;
 
-  const _PokedexDialog({required this.caughtPokemon});
+  const _PokedexDialog({
+    required this.caughtPokemon,
+    required this.shinyCaughtNames,
+  });
 
   @override
   State<_PokedexDialog> createState() => _PokedexDialogState();
@@ -802,10 +877,9 @@ class _PokedexDialogState extends State<_PokedexDialog>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
-  // 重複排除 & カウント（全体）
   late final Map<String, int> _counts;
-  late final List<PokemonEntry> _normal;  // pokedexId < 10000
-  late final List<PokemonEntry> _mega;    // pokedexId >= 10000
+  late final List<PokemonEntry> _normal;
+  late final List<PokemonEntry> _mega;
 
   @override
   void initState() {
@@ -884,8 +958,10 @@ class _PokedexDialogState extends State<_PokedexDialog>
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  _PokedexGrid(entries: _normal, counts: _counts),
-                  _PokedexGrid(entries: _mega,   counts: _counts),
+                  _PokedexGrid(entries: _normal, counts: _counts,
+                      shinyCaughtNames: widget.shinyCaughtNames),
+                  _PokedexGrid(entries: _mega,   counts: _counts,
+                      shinyCaughtNames: widget.shinyCaughtNames),
                 ],
               ),
             ),
@@ -899,8 +975,13 @@ class _PokedexDialogState extends State<_PokedexDialog>
 class _PokedexGrid extends StatelessWidget {
   final List<PokemonEntry> entries;
   final Map<String, int> counts;
+  final Set<String> shinyCaughtNames;
 
-  const _PokedexGrid({required this.entries, required this.counts});
+  const _PokedexGrid({
+    required this.entries,
+    required this.counts,
+    required this.shinyCaughtNames,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -930,7 +1011,11 @@ class _PokedexGrid extends StatelessWidget {
       itemCount: entries.length,
       itemBuilder: (context, i) {
         final p = entries[i];
-        return _PokedexCard(pokemon: p, count: counts[p.katakana]!);
+        return _PokedexCard(
+          pokemon: p,
+          count: counts[p.katakana]!,
+          isShiny: shinyCaughtNames.contains(p.katakana),
+        );
       },
     );
   }
@@ -941,8 +1026,13 @@ class _PokedexGrid extends StatelessWidget {
 class _PokedexCard extends StatelessWidget {
   final PokemonEntry pokemon;
   final int count;
+  final bool isShiny;
 
-  const _PokedexCard({required this.pokemon, required this.count});
+  const _PokedexCard({
+    required this.pokemon,
+    required this.count,
+    this.isShiny = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -966,7 +1056,7 @@ class _PokedexCard extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _PokemonImage(pokemon: pokemon, size: 72),
+                _PokemonImage(pokemon: pokemon, size: 72, isShiny: isShiny),
                 const SizedBox(height: 4),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -995,6 +1085,13 @@ class _PokedexCard extends StatelessWidget {
               ],
             ),
           ),
+          // 色違いバッジ
+          if (isShiny)
+            const Positioned(
+              top: 4,
+              left: 4,
+              child: Text('✨', style: TextStyle(fontSize: 12)),
+            ),
           // 複数回ゲットしたときのバッジ
           if (count > 1)
             Positioned(

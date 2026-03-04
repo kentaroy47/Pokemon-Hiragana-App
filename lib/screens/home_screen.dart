@@ -146,16 +146,16 @@ class _RightPanel extends StatelessWidget {
             isActive: true,
             isPokemon: true,
             onTap: () async {
-              final hiraganaMode = await showDialog<bool>(
+              final mode = await showDialog<PokemonPlayMode>(
                 context: context,
                 builder: (_) => const _PokemonModeDialog(),
               );
-              if (hiraganaMode == null) return;
+              if (mode == null) return;
               if (!context.mounted) return;
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => PokemonScreen(hiraganaMode: hiraganaMode),
+                  builder: (_) => PokemonScreen(mode: mode),
                 ),
               );
             },
@@ -350,15 +350,31 @@ class _PokemonModeDialog extends StatelessWidget {
             label: 'カタカナ',
             description: 'カタカナでなぞる',
             color: AppTheme.blueAccent,
-            onTap: () => Navigator.pop(context, false),
+            onTap: () => Navigator.pop(context, PokemonPlayMode.katakana),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
+          _ModeOption(
+            emoji: '💪',
+            label: 'カタカナ むずかしい',
+            description: 'よみかくし・いろちがいあり',
+            color: const Color(0xFFE65100),
+            onTap: () => Navigator.pop(context, PokemonPlayMode.katakanaHard),
+          ),
+          const SizedBox(height: 8),
           _ModeOption(
             emoji: '📝',
             label: 'ひらがな',
             description: 'ひらがなでなぞる',
             color: AppTheme.pinkAccent,
-            onTap: () => Navigator.pop(context, true),
+            onTap: () => Navigator.pop(context, PokemonPlayMode.hiragana),
+          ),
+          const SizedBox(height: 8),
+          _ModeOption(
+            emoji: '🔥',
+            label: 'ひらがな むずかしい',
+            description: 'よみかくし・いろちがいあり',
+            color: const Color(0xFF6A1B9A),
+            onTap: () => Navigator.pop(context, PokemonPlayMode.hiraganaHard),
           ),
         ],
       ),
