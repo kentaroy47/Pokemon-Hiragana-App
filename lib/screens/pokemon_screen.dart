@@ -211,6 +211,7 @@ class _PokemonScreenState extends State<PokemonScreen> {
                           totalStrokes: strokeCount,
                           onComplete: _onCharComplete,
                           showHint: _showHint,
+                          hideChar: widget.mode.isHard,
                         ),
                       ),
                     ],

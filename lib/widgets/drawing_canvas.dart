@@ -7,6 +7,7 @@ class DrawingCanvas extends StatefulWidget {
   final int totalStrokes;
   final void Function(int score)? onComplete;
   final bool showHint;
+  final bool hideChar;
 
   const DrawingCanvas({
     super.key,
@@ -14,6 +15,7 @@ class DrawingCanvas extends StatefulWidget {
     required this.totalStrokes,
     this.onComplete,
     this.showHint = false,
+    this.hideChar = false,
   });
 
   @override
@@ -115,6 +117,7 @@ class DrawingCanvasState extends State<DrawingCanvas> {
                     currentStrokeIndex: _strokes.length,
                     completed: _completed,
                     showHint: widget.showHint,
+                    hideChar: widget.hideChar,
                   ),
                   child: Container(),
                 ),
@@ -225,6 +228,7 @@ class _CanvasPainter extends CustomPainter {
   final int currentStrokeIndex;
   final bool completed;
   final bool showHint;
+  final bool hideChar;
 
   _CanvasPainter({
     required this.character,
@@ -233,6 +237,7 @@ class _CanvasPainter extends CustomPainter {
     required this.currentStrokeIndex,
     required this.completed,
     this.showHint = false,
+    this.hideChar = false,
   });
 
   @override
@@ -277,6 +282,7 @@ class _CanvasPainter extends CustomPainter {
   }
 
   void _drawReferenceChar(Canvas canvas, Size size) {
+    if (hideChar && !showHint) return;
     final tp = TextPainter(
       text: TextSpan(
         text: character,
