@@ -2,7 +2,7 @@
 
 子供がポケモンのなまえをなぞりながら、ひらがな・カタカナを楽しく練習できる Flutter Web アプリです。
 
-**[▶ アプリを開く](https://kentaroy47.github.io/hiragana/)**
+**[▶ アプリを開く](https://kentaroy47.github.io/Pokemon-Hiragana-App/)**
 
 ---
 
@@ -62,5 +62,5 @@ flutter run -d chrome
 `main` ブランチへの push で GitHub Actions が自動的に GitHub Pages へデプロイします。
 
 ```bash
-flutter build web --base-href /hiragana/ --release
+flutter build web --base-href /Pokemon-Hiragana-App/ --release
 ```
