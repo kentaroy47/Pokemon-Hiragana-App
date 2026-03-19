@@ -96,23 +96,27 @@ class MathData {
   }
 
   /// 正解 + ダミー3択の計4択リストを返す（シャッフル済み）
+  /// 正解は必ず含まれることを保証する。
   static List<int> generateChoices(int answer, Random random) {
-    final choices = <int>{answer};
+    // ダミー3つを answer と重複しないように生成
+    final distractors = <int>{};
     var attempts = 0;
-    while (choices.length < 4 && attempts < 200) {
+    while (distractors.length < 3 && attempts < 200) {
       attempts++;
       final offset = random.nextInt(5) + 1; // 1-5
       final candidate = random.nextBool() ? answer + offset : answer - offset;
-      if (candidate >= 0 && candidate <= 20) choices.add(candidate);
+      if (candidate >= 0 && candidate != answer) distractors.add(candidate);
     }
-    // 万が一4択に満たない場合は近傍で補完
+    // 200回試行後も足りない場合は連番で補完
     var fill = 1;
-    while (choices.length < 4) {
-      choices.add(answer + fill);
-      choices.add(answer - fill);
+    while (distractors.length < 3) {
+      if (answer + fill != answer) distractors.add(answer + fill);
+      if (distractors.length < 3 && answer - fill >= 0) {
+        distractors.add(answer - fill);
+      }
       fill++;
     }
-    final list = choices.take(4).toList()..shuffle(random);
-    return list;
+    // 正解を先頭に置いてから3つのダミーを追加し、シャッフル
+    return ([answer, ...distractors.take(3)])..shuffle(random);
   }
 }
