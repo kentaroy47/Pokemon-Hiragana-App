@@ -7,6 +7,7 @@ import '../data/pokemon_data.dart';
 import '../services/sound_service.dart';
 import '../services/storage_service.dart';
 import '../widgets/drawing_canvas.dart';
+import '../widgets/pokemon_widgets.dart';
 
 enum PokemonPlayMode { katakana, katakanaHard, hiragana, hiraganaHard }
 
@@ -230,7 +231,7 @@ class _PokemonScreenState extends State<PokemonScreen> {
                 // キラキラエフェクト（ゲット時）
                 if (_showCatchOverlay)
                   Positioned.fill(
-                    child: _ConfettiOverlay(baseColor: _pokemon.color),
+                    child: ConfettiOverlay(baseColor: _pokemon.color),
                   ),
               ],
             ),
@@ -296,7 +297,7 @@ class _LeftPanel extends StatelessWidget {
             child: Stack(
               alignment: Alignment.topRight,
               children: [
-                _PokemonImage(pokemon: pokemon, size: 130, isShiny: isShiny),
+                PokemonImage(pokemon: pokemon, size: 130, isShiny: isShiny),
                 if (isShiny)
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -439,108 +440,6 @@ class _MusicToggleButtonState extends State<_MusicToggleButton> {
       },
     );
   }
-}
-
-// ─── ポケモン画像（ネットワーク） ──────────────────────────────────────────────
-
-class _PokemonImage extends StatelessWidget {
-  final PokemonEntry pokemon;
-  final double size;
-  final bool isShiny;
-
-  const _PokemonImage(
-      {required this.pokemon, required this.size, this.isShiny = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: size,
-      height: size,
-      child: Image.network(
-        isShiny ? pokemon.shinyImageUrl : pokemon.imageUrl,
-        width: size,
-        height: size,
-        fit: BoxFit.contain,
-        loadingBuilder: (context, child, progress) {
-          if (progress == null) return child;
-          // 読込中はポケボールをプレースホルダーとして表示
-          return Center(
-            child: _Pokeball(color: pokemon.color, size: size * 0.75),
-          );
-        },
-        errorBuilder: (context, error, stack) {
-          // 読込失敗時もポケボールにフォールバック
-          return Center(
-            child: _Pokeball(color: pokemon.color, size: size * 0.75),
-          );
-        },
-      ),
-    );
-  }
-}
-
-// ─── ポケボール描画 ────────────────────────────────────────────────────────────
-
-class _Pokeball extends StatelessWidget {
-  final Color color;
-  final double size;
-
-  const _Pokeball({required this.color, required this.size});
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: Size(size, size),
-      painter: _PokeballPainter(color: color),
-    );
-  }
-}
-
-class _PokeballPainter extends CustomPainter {
-  final Color color;
-  const _PokeballPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final cx = size.width / 2;
-    final cy = size.height / 2;
-    final r = math.min(cx, cy) - 1;
-
-    // 上半分（テーマカラー）
-    canvas.drawArc(
-      Rect.fromCircle(center: Offset(cx, cy), radius: r),
-      math.pi, math.pi, true,
-      Paint()..color = color,
-    );
-    // 下半分（白）
-    canvas.drawArc(
-      Rect.fromCircle(center: Offset(cx, cy), radius: r),
-      0, math.pi, true,
-      Paint()..color = Colors.white,
-    );
-    // 外枠
-    canvas.drawCircle(
-      Offset(cx, cy), r,
-      Paint()
-        ..color = Colors.black87
-        ..strokeWidth = 2.5
-        ..style = PaintingStyle.stroke,
-    );
-    // 中央の仕切り線
-    canvas.drawLine(
-      Offset(cx - r, cy), Offset(cx + r, cy),
-      Paint()..color = Colors.black87..strokeWidth = 2.5,
-    );
-    // 中央ボタン（黒リング）
-    canvas.drawCircle(Offset(cx, cy), r * 0.24,
-        Paint()..color = Colors.black87);
-    // 中央ボタン（白）
-    canvas.drawCircle(Offset(cx, cy), r * 0.17,
-        Paint()..color = Colors.white);
-  }
-
-  @override
-  bool shouldRepaint(_PokeballPainter old) => old.color != color;
 }
 
 // ─── 文字進捗チップ ────────────────────────────────────────────────────────────
@@ -721,7 +620,7 @@ class _CatchOverlayState extends State<_CatchOverlay>
                       height: 150,
                       child: Stack(
                         children: [
-                          _PokemonImage(
+                          PokemonImage(
                               pokemon: widget.pokemon,
                               size: 150,
                               isShiny: widget.isShiny),
@@ -730,7 +629,7 @@ class _CatchOverlayState extends State<_CatchOverlay>
                             right: 0,
                             child: Transform.rotate(
                               angle: _spin.value,
-                              child: _Pokeball(color: color, size: 40),
+                              child: Pokeball(color: color, size: 40),
                             ),
                           ),
                           if (widget.isShiny)
@@ -1064,7 +963,7 @@ class _PokedexCard extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _PokemonImage(pokemon: pokemon, size: 72, isShiny: isShiny),
+                PokemonImage(pokemon: pokemon, size: 72, isShiny: isShiny),
                 const SizedBox(height: 4),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -1273,7 +1172,7 @@ class _PokedexDetailDialogState extends State<_PokedexDetailDialog> {
                   constraints: const BoxConstraints(),
                 ),
               ),
-              _PokemonImage(pokemon: widget.pokemon, size: 130),
+              PokemonImage(pokemon: widget.pokemon, size: 130),
               const SizedBox(height: 8),
               Text(
                 widget.pokemon.katakana,
@@ -1493,136 +1392,4 @@ class _HintButton extends StatelessWidget {
       ),
     );
   }
-}
-
-// ─── コンフェッティ（キラキラエフェクト） ──────────────────────────────────────
-
-class _Particle {
-  final double startX;
-  final double speed;
-  final double wobble;
-  final double rotation;
-  final double size;
-  final Color color;
-  final bool isRect;
-
-  const _Particle({
-    required this.startX,
-    required this.speed,
-    required this.wobble,
-    required this.rotation,
-    required this.size,
-    required this.color,
-    required this.isRect,
-  });
-}
-
-class _ConfettiOverlay extends StatefulWidget {
-  final Color baseColor;
-
-  const _ConfettiOverlay({required this.baseColor});
-
-  @override
-  State<_ConfettiOverlay> createState() => _ConfettiOverlayState();
-}
-
-class _ConfettiOverlayState extends State<_ConfettiOverlay>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-  late List<_Particle> _particles;
-  final _random = math.Random();
-
-  static const _palette = [
-    Color(0xFFFFD700),
-    Color(0xFFFF69B4),
-    Color(0xFF00CED1),
-    Color(0xFF98FB98),
-    Color(0xFFFF6347),
-    Color(0xFFDDA0DD),
-    Color(0xFFFFFFFF),
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      duration: const Duration(milliseconds: 2800),
-      vsync: this,
-    )..forward();
-
-    final colors = [..._palette, widget.baseColor];
-    _particles = List.generate(60, (_) {
-      return _Particle(
-        startX: _random.nextDouble(),
-        speed: 0.6 + _random.nextDouble() * 0.6,
-        wobble: (_random.nextDouble() - 0.5) * 2,
-        rotation: _random.nextDouble() * math.pi * 2,
-        size: 6 + _random.nextDouble() * 10,
-        color: colors[_random.nextInt(colors.length)],
-        isRect: _random.nextBool(),
-      );
-    });
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _ctrl,
-      builder: (context, _) {
-        return IgnorePointer(
-          child: CustomPaint(
-            painter: _ConfettiPainter(
-              particles: _particles,
-              progress: _ctrl.value,
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _ConfettiPainter extends CustomPainter {
-  final List<_Particle> particles;
-  final double progress;
-
-  const _ConfettiPainter({required this.particles, required this.progress});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..style = PaintingStyle.fill;
-    for (final p in particles) {
-      final alpha =
-          progress < 0.75 ? 1.0 : 1.0 - ((progress - 0.75) / 0.25);
-      paint.color = p.color.withValues(alpha: alpha.clamp(0.0, 1.0));
-
-      final y = size.height * progress * p.speed - p.size;
-      final x = size.width * p.startX +
-          math.sin(progress * math.pi * 4 + p.wobble * math.pi) * 30;
-
-      canvas.save();
-      canvas.translate(x, y);
-      canvas.rotate(p.rotation + progress * math.pi * 4 * p.speed);
-
-      if (p.isRect) {
-        canvas.drawRect(
-          Rect.fromCenter(
-              center: Offset.zero, width: p.size, height: p.size * 0.5),
-          paint,
-        );
-      } else {
-        canvas.drawCircle(Offset.zero, p.size * 0.5, paint);
-      }
-      canvas.restore();
-    }
-  }
-
-  @override
-  bool shouldRepaint(_ConfettiPainter old) => old.progress != progress;
 }

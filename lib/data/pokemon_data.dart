@@ -13,6 +13,15 @@ class PokemonEntry {
     required this.pokedexId,
   });
 
+  factory PokemonEntry.fromJson(Map<String, dynamic> json) {
+    return PokemonEntry(
+      katakana: json['katakana'] as String,
+      hiragana: json['hiragana'] as String,
+      color: Color(json['color'] as int),
+      pokedexId: json['id'] as int,
+    );
+  }
+
   List<String> get chars => katakana.split('');
   List<String> get hiraganaChars => hiragana.split('');
 

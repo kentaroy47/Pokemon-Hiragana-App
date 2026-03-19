@@ -22,7 +22,13 @@
       "Bash(flutter analyze lib/screens/pokemon_screen.dart)",
       "Bash(flutter analyze lib/data/pokemon_data.dart)",
       "Bash(flutter analyze --no-fatal-infos)",
-      "WebFetch(domain:pokeapi.co)"
+      "WebFetch(domain:pokeapi.co)",
+      "Bash(dart run:*)",
+      "Bash(curl -s \"https://pokeapi.co/api/v2/pokemon-species/25/\")",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\([\\(n[''''language''''][''''name''''], n[''''name'''']\\) for n in d[''''names'''']][:10]\\)\")",
+      "Bash(curl -s https://pokeapi.co/api/v2/pokemon-species/25/)",
+      "Read(//tmp/**)",
+      "Bash(dart analyze:*)"
     ]
   }
 }

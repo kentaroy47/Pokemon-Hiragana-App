@@ -4,6 +4,7 @@ import '../data/hiragana_data.dart';
 import '../data/katakana_data.dart';
 import 'practice_screen.dart';
 import 'map_screen.dart';
+import 'math_screen.dart';
 import 'pokemon_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -139,6 +140,21 @@ class _RightPanel extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
+          // さんすう button
+          _MenuButton(
+            emoji: '🔢',
+            label: 'さんすう',
+            isActive: true,
+            isMath: true,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MathScreen()),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+
           // ポケモン button
           _MenuButton(
             emoji: '🎯',
@@ -206,6 +222,7 @@ class _MenuButton extends StatelessWidget {
   final String label;
   final bool isActive;
   final bool isPokemon;
+  final bool isMath;
   final VoidCallback? onTap;
 
   const _MenuButton({
@@ -213,6 +230,7 @@ class _MenuButton extends StatelessWidget {
     required this.label,
     required this.isActive,
     this.isPokemon = false,
+    this.isMath = false,
     this.onTap,
   });
 
@@ -222,7 +240,9 @@ class _MenuButton extends StatelessWidget {
         ? const Color(0xFFEEEAE0)
         : isPokemon
             ? AppTheme.levelGold
-            : AppTheme.blueAccent;
+            : isMath
+                ? const Color(0xFF5CAD5C)
+                : AppTheme.blueAccent;
 
     return GestureDetector(
       onTap: onTap,
