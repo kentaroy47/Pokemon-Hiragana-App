@@ -531,77 +531,97 @@ class _ChoiceGrid extends StatelessWidget {
     required this.onTap,
   });
 
-  @override
-  Widget build(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: 2,
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      padding: const EdgeInsets.only(top: 8),
-      physics: const NeverScrollableScrollPhysics(),
-      children: choices.map((c) {
-        Color bg = Colors.white;
-        Color border = const Color(0xFFDDDDDD);
-        Color textColor = AppTheme.darkText;
-        Widget? overlay;
+  Widget _buildButton(int c) {
+    Color bg = Colors.white;
+    Color border = const Color(0xFFDDDDDD);
+    Color textColor = AppTheme.darkText;
+    Widget? overlay;
 
-        if (selectedAnswer != null) {
-          if (c == correctAnswer) {
-            bg = const Color(0xFFE8F5E9);
-            border = const Color(0xFF66BB6A);
-            textColor = const Color(0xFF2E7D32);
-            overlay = const Positioned(
-              top: 8,
-              right: 8,
-              child: Icon(Icons.check_circle_rounded,
-                  color: Color(0xFF66BB6A), size: 22),
-            );
-          } else if (c == selectedAnswer) {
-            bg = const Color(0xFFFFEBEE);
-            border = const Color(0xFFEF9A9A);
-            textColor = const Color(0xFFC62828);
-            overlay = const Positioned(
-              top: 8,
-              right: 8,
-              child: Icon(Icons.cancel_rounded,
-                  color: Color(0xFFEF9A9A), size: 22),
-            );
-          }
-        }
+    if (selectedAnswer != null) {
+      if (c == correctAnswer) {
+        bg = const Color(0xFFE8F5E9);
+        border = const Color(0xFF66BB6A);
+        textColor = const Color(0xFF2E7D32);
+        overlay = const Positioned(
+          top: 8,
+          right: 8,
+          child: Icon(Icons.check_circle_rounded,
+              color: Color(0xFF66BB6A), size: 22),
+        );
+      } else if (c == selectedAnswer) {
+        bg = const Color(0xFFFFEBEE);
+        border = const Color(0xFFEF9A9A);
+        textColor = const Color(0xFFC62828);
+        overlay = const Positioned(
+          top: 8,
+          right: 8,
+          child: Icon(Icons.cancel_rounded,
+              color: Color(0xFFEF9A9A), size: 22),
+        );
+      }
+    }
 
-        return GestureDetector(
-          onTap: selectedAnswer == null ? () => onTap(c) : null,
-          child: Stack(
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: bg,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: border, width: 2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+    return GestureDetector(
+      onTap: selectedAnswer == null ? () => onTap(c) : null,
+      child: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: border, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
                 ),
-                child: Center(
-                  child: Text(
-                    '$c',
-                    style: TextStyle(
-                      fontSize: 52,
-                      fontWeight: FontWeight.bold,
-                      color: textColor,
-                    ),
-                  ),
+              ],
+            ),
+            child: Center(
+              child: Text(
+                '$c',
+                style: TextStyle(
+                  fontSize: 52,
+                  fontWeight: FontWeight.bold,
+                  color: textColor,
                 ),
               ),
-              if (overlay != null) overlay,
-            ],
+            ),
           ),
-        );
-      }).toList(),
+          if (overlay != null) overlay,
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(child: _buildButton(choices[0])),
+                const SizedBox(width: 12),
+                Expanded(child: _buildButton(choices[1])),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(child: _buildButton(choices[2])),
+                const SizedBox(width: 12),
+                Expanded(child: _buildButton(choices[3])),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
