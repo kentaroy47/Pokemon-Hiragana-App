@@ -27,6 +27,8 @@ enum MathLevel {
   addCarry,
   /// レベル4: ひき算（繰り下がりあり）  a ≥ 10, borrowing occurs
   subBorrow,
+  /// レベル5: くりあがりたし算 ＋ くりさがりひき算 のミックス（ループ）
+  mixed,
 }
 
 extension MathLevelX on MathLevel {
@@ -42,13 +44,16 @@ extension MathLevelX on MathLevel {
         return 'くりあがり\nたしざん';
       case MathLevel.subBorrow:
         return 'くりさがり\nひきざん';
+      case MathLevel.mixed:
+        return 'ミックス';
     }
   }
 
   bool get showDots => this == MathLevel.addSimple;
 
+  /// 次のレベル。mixed は自分自身にループする。
   MathLevel get next {
-    if (index + 1 >= MathLevel.values.length) return MathLevel.subBorrow;
+    if (this == MathLevel.mixed) return MathLevel.mixed;
     return MathLevel.values[index + 1];
   }
 }
@@ -87,6 +92,13 @@ class MathData {
           b = random.nextInt(8) + 2;  // 2-9
         } while (a <= b || (a % 10) >= b); // 繰り下がりを保証
         return MathProblem(a: a, b: b, op: '-', answer: a - b);
+
+      case MathLevel.mixed:
+        // くりあがりたし算 と くりさがりひき算 をランダムに選ぶ
+        return generate(
+          random.nextBool() ? MathLevel.addCarry : MathLevel.subBorrow,
+          random,
+        );
     }
   }
 

@@ -105,7 +105,7 @@ class _MathScreenState extends State<MathScreen> {
 
   void _nextRound() {
     setState(() {
-      if (_passed && _level != MathLevel.subBorrow) _level = _level.next;
+      if (_passed) _level = _level.next;
       _correctCount = 0;
       _showRoundResult = false;
       _rewardPokemon = null;
@@ -355,6 +355,8 @@ class _LeftPanel extends StatelessWidget {
         return const Color(0xFF5CAD5C);
       case MathLevel.subBorrow:
         return const Color(0xFFE67E22);
+      case MathLevel.mixed:
+        return const Color(0xFF9C27B0);
     }
   }
 }
@@ -388,6 +390,8 @@ class _QuestionPanel extends StatelessWidget {
         return const Color(0xFF5CAD5C);
       case MathLevel.subBorrow:
         return const Color(0xFFE67E22);
+      case MathLevel.mixed:
+        return const Color(0xFF9C27B0);
     }
   }
 
