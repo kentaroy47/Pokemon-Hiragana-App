@@ -105,7 +105,16 @@ class _MathScreenState extends State<MathScreen> {
 
   void _nextRound() {
     setState(() {
-      if (_passed) _level = _level.next;
+      _correctCount = 0;
+      _showRoundResult = false;
+      _rewardPokemon = null;
+      _startRound();
+    });
+  }
+
+  void _selectLevel(MathLevel newLevel) {
+    setState(() {
+      _level = newLevel;
       _correctCount = 0;
       _showRoundResult = false;
       _rewardPokemon = null;
@@ -129,6 +138,7 @@ class _MathScreenState extends State<MathScreen> {
               showResult: _showRoundResult,
               caughtCount: _caughtPokemon.length,
               onBack: () => Navigator.pop(context),
+              onLevelSelect: _selectLevel,
             ),
           ),
           // ─── 右パネル ───
@@ -179,6 +189,7 @@ class _LeftPanel extends StatelessWidget {
   final bool showResult;
   final int caughtCount;
   final VoidCallback onBack;
+  final ValueChanged<MathLevel> onLevelSelect;
 
   const _LeftPanel({
     required this.level,
@@ -187,6 +198,7 @@ class _LeftPanel extends StatelessWidget {
     required this.showResult,
     required this.caughtCount,
     required this.onBack,
+    required this.onLevelSelect,
   });
 
   @override
@@ -216,42 +228,57 @@ class _LeftPanel extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
-          // レベルバッジ
-          Center(
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: _levelColor(level),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    'Lv.${level.number}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                    ),
+          // レベル選択リスト
+          ...MathLevel.values.map((l) {
+            final selected = l == level;
+            final color = _levelColor(l);
+            return GestureDetector(
+              onTap: selected ? null : () => onLevelSelect(l),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                margin: const EdgeInsets.symmetric(vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: selected ? color : color.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: selected ? color : color.withValues(alpha: 0.3),
+                    width: selected ? 2 : 1,
                   ),
-                  Text(
-                    level.label,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      height: 1.3,
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      'Lv.${l.number}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: selected ? Colors.white : color,
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        l.label,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: selected ? Colors.white : AppTheme.darkText,
+                          height: 1.3,
+                        ),
+                      ),
+                    ),
+                    if (selected)
+                      const Icon(Icons.play_arrow_rounded,
+                          color: Colors.white, size: 16),
+                  ],
+                ),
               ),
-            ),
-          ),
-          const SizedBox(height: 24),
+            );
+          }),
+          const SizedBox(height: 16),
 
           // 問題進捗（5つの丸）
           Center(
