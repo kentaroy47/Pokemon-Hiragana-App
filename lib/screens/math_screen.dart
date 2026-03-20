@@ -205,30 +205,27 @@ class _LeftPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: AppTheme.white,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // 戻るボタン
-          Row(
-            children: [
-              OutlinedButton.icon(
-                onPressed: onBack,
-                icon: const Icon(Icons.home_outlined, size: 16),
-                label:
-                    const Text('もどる', style: TextStyle(fontSize: 13)),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppTheme.darkText,
-                  side: const BorderSide(color: Color(0xFFCCCCCC)),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20)),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 6),
-                ),
-              ),
-            ],
+          OutlinedButton.icon(
+            onPressed: onBack,
+            icon: const Icon(Icons.home_outlined, size: 14),
+            label: const Text('もどる', style: TextStyle(fontSize: 12)),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppTheme.darkText,
+              side: const BorderSide(color: Color(0xFFCCCCCC)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
 
           // レベル選択リスト
           ...MathLevel.values.map((l) {
@@ -238,11 +235,12 @@ class _LeftPanel extends StatelessWidget {
               onTap: selected ? null : () => onLevelSelect(l),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
-                margin: const EdgeInsets.symmetric(vertical: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                margin: const EdgeInsets.symmetric(vertical: 2),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: selected ? color : color.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: selected ? color : color.withValues(alpha: 0.3),
                     width: selected ? 2 : 1,
@@ -253,44 +251,46 @@ class _LeftPanel extends StatelessWidget {
                     Text(
                       'Lv.${l.number}',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 11,
                         fontWeight: FontWeight.bold,
                         color: selected ? Colors.white : color,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         l.label,
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 12,
                           fontWeight: FontWeight.bold,
-                          color: selected ? Colors.white : AppTheme.darkText,
+                          color: selected
+                              ? Colors.white
+                              : AppTheme.darkText,
                           height: 1.3,
                         ),
                       ),
                     ),
                     if (selected)
                       const Icon(Icons.play_arrow_rounded,
-                          color: Colors.white, size: 16),
+                          color: Colors.white, size: 14),
                   ],
                 ),
               ),
             );
           }),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
 
           // 問題進捗（5つの丸）
           Center(
             child: Text(
               'もんだい',
               style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 11,
                   color: AppTheme.textGray,
                   fontWeight: FontWeight.bold),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(5, (i) {
@@ -341,12 +341,12 @@ class _LeftPanel extends StatelessWidget {
             }),
           ),
 
-          const Spacer(),
+          const Spacer(flex: 1),
 
           // ゲット済みポケモン数
           Container(
             padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
               color: AppTheme.background,
               borderRadius: BorderRadius.circular(14),
