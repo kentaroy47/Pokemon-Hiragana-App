@@ -127,6 +127,7 @@ class _MathScreenState extends State<MathScreen> {
     return Scaffold(
       backgroundColor: AppTheme.background,
       body: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // ─── 左パネル ───
           SizedBox(
@@ -205,10 +206,16 @@ class _LeftPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: AppTheme.white,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: MediaQuery.of(context).size.height - 16,
+          ),
+          child: IntrinsicHeight(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
           // 戻るボタン
           OutlinedButton.icon(
             onPressed: onBack,
@@ -367,7 +374,10 @@ class _LeftPanel extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-        ],
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
