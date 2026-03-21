@@ -5,6 +5,7 @@ import '../data/katakana_data.dart';
 import 'practice_screen.dart';
 import 'math_screen.dart';
 import 'pokemon_screen.dart';
+import '../services/analytics_service.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -113,8 +114,10 @@ class _RightPanel extends StatelessWidget {
               );
               if (result == null) return;
               if (!context.mounted) return;
+              AnalyticsService.logKokugoModeSelected(result.name);
               switch (result) {
                 case _KokugoMode.hiragana:
+                  AnalyticsService.logScreenView('hiragana');
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -125,14 +128,16 @@ class _RightPanel extends StatelessWidget {
                     ),
                   );
                 case _KokugoMode.hiraganaHard:
+                  AnalyticsService.logScreenView('hiragana_hard');
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) =>
-                          const PokemonScreen(mode: PokemonPlayMode.hiragana),
+                          const PokemonScreen(mode: PokemonPlayMode.hiraganaHard),
                     ),
                   );
                 case _KokugoMode.katakana:
+                  AnalyticsService.logScreenView('katakana');
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -143,11 +148,12 @@ class _RightPanel extends StatelessWidget {
                     ),
                   );
                 case _KokugoMode.katakanaHard:
+                  AnalyticsService.logScreenView('katakana_hard');
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) =>
-                          const PokemonScreen(mode: PokemonPlayMode.katakana),
+                          const PokemonScreen(mode: PokemonPlayMode.katakanaHard),
                     ),
                   );
               }

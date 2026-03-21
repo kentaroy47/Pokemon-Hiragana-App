@@ -6,6 +6,7 @@ import '../data/pokemon_data.dart';
 import '../services/pokemon_repository.dart';
 import '../services/storage_service.dart';
 import '../services/sound_service.dart';
+import '../services/analytics_service.dart';
 import '../widgets/pokemon_widgets.dart';
 
 // ─── さんすう画面 ────────────────────────────────────────────────────────────
@@ -51,6 +52,7 @@ class _MathScreenState extends State<MathScreen> {
       if (entry != null) _caughtPokemon.add(entry);
     }
     _startRound();
+    AnalyticsService.logScreenView('math');
   }
 
   void _startRound() {
@@ -98,9 +100,23 @@ class _MathScreenState extends State<MathScreen> {
           _caughtPokemon.map((p) => p.katakana).toList());
       SoundService.playCatch();
     }
+    final shiny = _passed && _random.nextDouble() < 0.1;
+    AnalyticsService.logMathRoundComplete(
+      level: _level.name,
+      score: _correctCount,
+      passed: _passed,
+      isShiny: shiny,
+    );
+    if (reward != null) {
+      AnalyticsService.logPokemonCaught(
+        pokemonName: reward.katakana,
+        isShiny: shiny,
+        source: 'math',
+      );
+    }
     setState(() {
       _rewardPokemon = reward;
-      _rewardIsShiny = _passed && _random.nextDouble() < 0.1;
+      _rewardIsShiny = shiny;
       _showRoundResult = true;
     });
   }
