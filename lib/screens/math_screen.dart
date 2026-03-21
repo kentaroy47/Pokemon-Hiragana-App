@@ -100,7 +100,7 @@ class _MathScreenState extends State<MathScreen> {
           _caughtPokemon.map((p) => p.katakana).toList());
       SoundService.playCatch();
     }
-    final shiny = _passed && _random.nextDouble() < 0.1;
+    final shiny = _passed && _random.nextDouble() < 0.2;
     AnalyticsService.logMathRoundComplete(
       level: _level.name,
       score: _correctCount,
