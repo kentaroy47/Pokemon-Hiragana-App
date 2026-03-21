@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'app_theme.dart';
+import 'app_palette.dart';
 import 'screens/home_screen.dart';
 import 'services/pokemon_repository.dart';
+import 'services/storage_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -11,6 +12,13 @@ void main() async {
     DeviceOrientation.landscapeRight,
   ]);
   await PokemonRepository.init();
+
+  // 保存済みパレットを復元
+  final savedId = StorageService.loadPaletteId();
+  if (savedId != null) {
+    paletteNotifier.value = AppPalettes.findById(savedId);
+  }
+
   runApp(const HiraganaApp());
 }
 
@@ -19,11 +27,16 @@ class HiraganaApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'ひらがな れんしゅう',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.build(),
-      home: const HomeScreen(),
+    return ValueListenableBuilder<AppPalette>(
+      valueListenable: paletteNotifier,
+      builder: (context, palette, _) {
+        return MaterialApp(
+          title: 'ひらがな れんしゅう',
+          debugShowCheckedModeBanner: false,
+          theme: buildTheme(palette),
+          home: const HomeScreen(),
+        );
+      },
     );
   }
 }

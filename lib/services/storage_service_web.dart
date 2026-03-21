@@ -10,6 +10,7 @@ external _JSStorage get _localStorage;
 
 const _key = 'pokemon_caught';
 const _shinyKey = 'pokemon_caught_shiny';
+const _paletteKey = 'app_palette';
 
 /// ブラウザの localStorage を使ったデータ永続化サービス
 class StorageService {
@@ -46,6 +47,23 @@ class StorageService {
   static void saveShinyCaughtNames(Set<String> names) {
     try {
       _localStorage.setItem(_shinyKey, names.join(','));
+    } catch (_) {}
+  }
+
+  /// 選択中のパレットIDを読み込む
+  static String? loadPaletteId() {
+    try {
+      final raw = _localStorage.getItem(_paletteKey)?.toDart ?? '';
+      return raw.isEmpty ? null : raw;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// 選択中のパレットIDを保存する
+  static void savePaletteId(String id) {
+    try {
+      _localStorage.setItem(_paletteKey, id);
     } catch (_) {}
   }
 }

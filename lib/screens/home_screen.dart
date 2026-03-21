@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../app_palette.dart';
 import '../app_theme.dart';
 import '../data/hiragana_data.dart';
 import '../data/katakana_data.dart';
@@ -6,28 +7,30 @@ import 'practice_screen.dart';
 import 'math_screen.dart';
 import 'pokemon_screen.dart';
 import '../services/analytics_service.dart';
+import '../services/storage_service.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final palette = paletteOf(context);
     return Scaffold(
       body: Row(
         children: [
-          // Left: yellow panel
+          // Left: colored panel
           Expanded(
             flex: 5,
             child: Container(
-              color: AppTheme.yellowPanel,
+              color: palette.leftPanel,
               child: const _LeftPanel(),
             ),
           ),
-          // Right: cream panel
+          // Right: background panel
           Expanded(
             flex: 7,
             child: Container(
-              color: AppTheme.background,
+              color: palette.background,
               child: const _RightPanel(),
             ),
           ),
@@ -85,6 +88,7 @@ class _RightPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = paletteOf(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 32),
       child: Column(
@@ -106,7 +110,7 @@ class _RightPanel extends StatelessWidget {
           _MenuButton(
             emoji: '📖',
             label: 'こくご',
-            color: AppTheme.blueAccent,
+            color: palette.primary,
             onTap: () async {
               final result = await showDialog<_KokugoMode>(
                 context: context,
@@ -165,7 +169,7 @@ class _RightPanel extends StatelessWidget {
           _MenuButton(
             emoji: '🔢',
             label: 'さんすう',
-            color: const Color(0xFF5CAD5C),
+            color: palette.secondary,
             onTap: () {
               Navigator.push(
                 context,
@@ -173,6 +177,11 @@ class _RightPanel extends StatelessWidget {
               );
             },
           ),
+
+          const Spacer(),
+
+          // パレット選択
+          _PalettePicker(currentId: palette.id),
         ],
       ),
     );
@@ -335,6 +344,59 @@ class _ModeOption extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ─── パレット選択スウォッチ ────────────────────────────────────────────────────
+
+class _PalettePicker extends StatelessWidget {
+  final String currentId;
+  const _PalettePicker({required this.currentId});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        const Text(
+          'いろ：',
+          style: TextStyle(fontSize: 12, color: AppTheme.textGray),
+        ),
+        const SizedBox(width: 6),
+        ...AppPalettes.all.map((p) {
+          final selected = p.id == currentId;
+          return GestureDetector(
+            onTap: () {
+              paletteNotifier.value = p;
+              StorageService.savePaletteId(p.id);
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              margin: const EdgeInsets.only(left: 8),
+              width: selected ? 28 : 22,
+              height: selected ? 28 : 22,
+              decoration: BoxDecoration(
+                color: p.leftPanel,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: selected ? AppTheme.darkText : Colors.transparent,
+                  width: 2.5,
+                ),
+                boxShadow: selected
+                    ? [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        )
+                      ]
+                    : null,
+              ),
+            ),
+          );
+        }),
+      ],
     );
   }
 }
