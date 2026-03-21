@@ -3,7 +3,6 @@ import '../app_theme.dart';
 import '../data/hiragana_data.dart';
 import '../data/katakana_data.dart';
 import 'practice_screen.dart';
-import 'map_screen.dart';
 import 'math_screen.dart';
 import 'pokemon_screen.dart';
 
@@ -92,7 +91,7 @@ class _RightPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text(
-            'たのしくかこうね！',
+            'たのしくまなぼう！',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 22,
@@ -100,116 +99,73 @@ class _RightPanel extends StatelessWidget {
               color: AppTheme.darkText,
             ),
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 32),
 
-          // ひらがな button
+          // こくご button
           _MenuButton(
-            emoji: '🌸',
-            label: 'ひらがな',
-            isActive: true,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const PracticeScreen(
-                    rows: hiraganaRows,
-                    title: 'ひらがな',
-                  ),
-                ),
+            emoji: '📖',
+            label: 'こくご',
+            color: AppTheme.blueAccent,
+            onTap: () async {
+              final result = await showDialog<_KokugoMode>(
+                context: context,
+                builder: (_) => const _KokugoModeDialog(),
               );
+              if (result == null) return;
+              if (!context.mounted) return;
+              switch (result) {
+                case _KokugoMode.hiragana:
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const PracticeScreen(
+                        rows: hiraganaRows,
+                        title: 'ひらがな',
+                      ),
+                    ),
+                  );
+                case _KokugoMode.hiraganaHard:
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          const PokemonScreen(mode: PokemonPlayMode.hiragana),
+                    ),
+                  );
+                case _KokugoMode.katakana:
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const PracticeScreen(
+                        rows: katakanaRows,
+                        title: 'カタカナ',
+                      ),
+                    ),
+                  );
+                case _KokugoMode.katakanaHard:
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          const PokemonScreen(mode: PokemonPlayMode.katakana),
+                    ),
+                  );
+              }
             },
           ),
-          const SizedBox(height: 12),
-
-          // カタカナ button
-          _MenuButton(
-            emoji: '🌼',
-            label: 'カタカナ',
-            isActive: true,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const PracticeScreen(
-                    rows: katakanaRows,
-                    title: 'カタカナ',
-                  ),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
 
           // さんすう button
           _MenuButton(
             emoji: '🔢',
             label: 'さんすう',
-            isActive: true,
-            isMath: true,
+            color: const Color(0xFF5CAD5C),
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const MathScreen()),
               );
             },
-          ),
-          const SizedBox(height: 12),
-
-          // ポケモン button
-          _MenuButton(
-            emoji: '🎯',
-            label: 'ポケモン',
-            isActive: true,
-            isPokemon: true,
-            onTap: () async {
-              final mode = await showDialog<PokemonPlayMode>(
-                context: context,
-                builder: (_) => const _PokemonModeDialog(),
-              );
-              if (mode == null) return;
-              if (!context.mounted) return;
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => PokemonScreen(mode: mode),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 24),
-
-          // Level card
-          _LevelCard(),
-          const SizedBox(height: 20),
-
-          // 50音マップ button
-          OutlinedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const MapScreen(
-                    rows: hiraganaRows,
-                    title: 'ひらがな',
-                  ),
-                ),
-              );
-            },
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppTheme.pinkAccent,
-              side: const BorderSide(color: AppTheme.pinkAccent, width: 2),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-            ),
-            child: const Text(
-              '50おんマップ',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
           ),
         ],
       ),
@@ -220,54 +176,41 @@ class _RightPanel extends StatelessWidget {
 class _MenuButton extends StatelessWidget {
   final String emoji;
   final String label;
-  final bool isActive;
-  final bool isPokemon;
-  final bool isMath;
+  final Color color;
   final VoidCallback? onTap;
 
   const _MenuButton({
     required this.emoji,
     required this.label,
-    required this.isActive,
-    this.isPokemon = false,
-    this.isMath = false,
+    required this.color,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final Color bg = !isActive
-        ? const Color(0xFFEEEAE0)
-        : isPokemon
-            ? AppTheme.levelGold
-            : isMath
-                ? const Color(0xFF5CAD5C)
-                : AppTheme.blueAccent;
-
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
         decoration: BoxDecoration(
-          color: bg,
+          color: color,
           borderRadius: BorderRadius.circular(30),
         ),
         child: Row(
           children: [
-            Text(emoji, style: const TextStyle(fontSize: 22)),
-            const SizedBox(width: 12),
+            Text(emoji, style: const TextStyle(fontSize: 26)),
+            const SizedBox(width: 16),
             Text(
               label,
-              style: TextStyle(
-                fontSize: 20,
+              style: const TextStyle(
+                fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: isActive ? Colors.white : AppTheme.textGray,
+                color: Colors.white,
               ),
             ),
-            if (isPokemon) ...[
-              const Spacer(),
-              const Text('🎮', style: TextStyle(fontSize: 18)),
-            ],
+            const Spacer(),
+            const Icon(Icons.arrow_forward_ios_rounded,
+                color: Colors.white54, size: 18),
           ],
         ),
       ),
@@ -275,83 +218,12 @@ class _MenuButton extends StatelessWidget {
   }
 }
 
-class _LevelCard extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppTheme.levelGold,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Text(
-                  'Lv.1',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              const Text(
-                'ひらがなのたまご',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.darkText,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: const LinearProgressIndicator(
-              value: 0,
-              minHeight: 6,
-              backgroundColor: Color(0xFFEEEEEE),
-              valueColor:
-                  AlwaysStoppedAnimation<Color>(AppTheme.levelGold),
-            ),
-          ),
-          const SizedBox(height: 6),
-          const Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              '0pt / 100pt',
-              style: TextStyle(fontSize: 12, color: AppTheme.textGray),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+// ─── こくごモード ──────────────────────────────────────────────────────────────
 
-// ─── ポケモンモード選択ダイアログ ───────────────────────────────────────────────
+enum _KokugoMode { hiragana, hiraganaHard, katakana, katakanaHard }
 
-class _PokemonModeDialog extends StatelessWidget {
-  const _PokemonModeDialog();
+class _KokugoModeDialog extends StatelessWidget {
+  const _KokugoModeDialog();
 
   @override
   Widget build(BuildContext context) {
@@ -366,35 +238,35 @@ class _PokemonModeDialog extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           _ModeOption(
-            emoji: '🔤',
-            label: 'カタカナ',
-            description: 'カタカナでなぞる',
-            color: AppTheme.blueAccent,
-            onTap: () => Navigator.pop(context, PokemonPlayMode.katakana),
-          ),
-          const SizedBox(height: 8),
-          _ModeOption(
-            emoji: '💪',
-            label: 'カタカナ むずかしい',
-            description: 'よみかくし・いろちがいあり',
-            color: const Color(0xFFE65100),
-            onTap: () => Navigator.pop(context, PokemonPlayMode.katakanaHard),
-          ),
-          const SizedBox(height: 8),
-          _ModeOption(
-            emoji: '📝',
+            emoji: '🌸',
             label: 'ひらがな',
-            description: 'ひらがなでなぞる',
+            description: '1もじずつれんしゅう',
             color: AppTheme.pinkAccent,
-            onTap: () => Navigator.pop(context, PokemonPlayMode.hiragana),
+            onTap: () => Navigator.pop(context, _KokugoMode.hiragana),
           ),
           const SizedBox(height: 8),
           _ModeOption(
             emoji: '🔥',
-            label: 'ひらがな むずかしい',
-            description: 'よみかくし・いろちがいあり',
+            label: 'むずかしいひらがな',
+            description: 'ポケモンのなまえをなぞる',
             color: const Color(0xFF6A1B9A),
-            onTap: () => Navigator.pop(context, PokemonPlayMode.hiraganaHard),
+            onTap: () => Navigator.pop(context, _KokugoMode.hiraganaHard),
+          ),
+          const SizedBox(height: 8),
+          _ModeOption(
+            emoji: '🌼',
+            label: 'カタカナ',
+            description: '1もじずつれんしゅう',
+            color: AppTheme.blueAccent,
+            onTap: () => Navigator.pop(context, _KokugoMode.katakana),
+          ),
+          const SizedBox(height: 8),
+          _ModeOption(
+            emoji: '💪',
+            label: 'むずかしいカタカナ',
+            description: 'ポケモンのなまえをなぞる',
+            color: const Color(0xFFE65100),
+            onTap: () => Navigator.pop(context, _KokugoMode.katakanaHard),
           ),
         ],
       ),
@@ -440,7 +312,7 @@ class _ModeOption extends StatelessWidget {
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: color,
                   ),
@@ -448,7 +320,7 @@ class _ModeOption extends StatelessWidget {
                 Text(
                   description,
                   style: const TextStyle(
-                    fontSize: 13,
+                    fontSize: 12,
                     color: Color(0xFF888888),
                   ),
                 ),
