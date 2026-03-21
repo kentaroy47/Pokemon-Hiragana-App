@@ -33,6 +33,7 @@ class _MathScreenState extends State<MathScreen> {
 
   bool _showRoundResult = false;
   PokemonEntry? _rewardPokemon;
+  bool _rewardIsShiny = false;
   int _prevPokemonIndex = -1;
 
   final List<PokemonEntry> _caughtPokemon = [];
@@ -99,6 +100,7 @@ class _MathScreenState extends State<MathScreen> {
     }
     setState(() {
       _rewardPokemon = reward;
+      _rewardIsShiny = _passed && _random.nextDouble() < 0.1;
       _showRoundResult = true;
     });
   }
@@ -108,6 +110,7 @@ class _MathScreenState extends State<MathScreen> {
       _correctCount = 0;
       _showRoundResult = false;
       _rewardPokemon = null;
+      _rewardIsShiny = false;
       _startRound();
     });
   }
@@ -165,6 +168,7 @@ class _MathScreenState extends State<MathScreen> {
                     total: _questionsPerRound,
                     passed: _passed,
                     rewardPokemon: _rewardPokemon,
+                    isShiny: _rewardIsShiny,
                     onNext: _nextRound,
                   ),
                 if (_showRoundResult && _passed && _rewardPokemon != null)
@@ -674,6 +678,7 @@ class _RoundResultOverlay extends StatefulWidget {
   final int total;
   final bool passed;
   final PokemonEntry? rewardPokemon;
+  final bool isShiny;
   final VoidCallback onNext;
 
   const _RoundResultOverlay({
@@ -681,6 +686,7 @@ class _RoundResultOverlay extends StatefulWidget {
     required this.total,
     required this.passed,
     required this.rewardPokemon,
+    required this.isShiny,
     required this.onNext,
   });
 
@@ -776,7 +782,7 @@ class _RoundResultOverlayState extends State<_RoundResultOverlay>
                         height: 130,
                         child: Stack(
                           children: [
-                            PokemonImage(pokemon: pokemon, size: 130),
+                            PokemonImage(pokemon: pokemon, size: 130, isShiny: widget.isShiny),
                             Positioned(
                               bottom: 0,
                               right: 0,
@@ -798,6 +804,15 @@ class _RoundResultOverlayState extends State<_RoundResultOverlay>
                           color: pokemon.color,
                         ),
                       ),
+                      if (widget.isShiny)
+                        const Text(
+                          '✨ いろちがい！ ✨',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFFFD700),
+                          ),
+                        ),
                       Text(
                         'ゲット！',
                         style: TextStyle(
