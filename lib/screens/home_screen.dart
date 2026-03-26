@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import '../app_palette.dart';
 import '../app_theme.dart';
-import '../data/hiragana_data.dart';
-import '../data/katakana_data.dart';
-import 'practice_screen.dart';
 import 'math_screen.dart';
-import 'pokemon_screen.dart';
+import 'pokemon_screen.dart' show PokemonPlayMode, PokemonScreen, PokedexDialog;
 import '../services/analytics_service.dart';
 import '../services/storage_service.dart';
+import '../services/pokemon_repository.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -125,10 +123,8 @@ class _RightPanel extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const PracticeScreen(
-                        rows: hiraganaRows,
-                        title: 'ひらがな',
-                      ),
+                      builder: (_) =>
+                          const PokemonScreen(mode: PokemonPlayMode.hiragana),
                     ),
                   );
                 case _KokugoMode.hiraganaHard:
@@ -145,10 +141,8 @@ class _RightPanel extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const PracticeScreen(
-                        rows: katakanaRows,
-                        title: 'カタカナ',
-                      ),
+                      builder: (_) =>
+                          const PokemonScreen(mode: PokemonPlayMode.katakana),
                     ),
                   );
                 case _KokugoMode.katakanaHard:
@@ -180,8 +174,72 @@ class _RightPanel extends StatelessWidget {
 
           const Spacer(),
 
-          // パレット選択
-          _PalettePicker(currentId: palette.id),
+          // 下段：図鑑 + パレット選択
+          Row(
+            children: [
+              // 図鑑ボタン
+              GestureDetector(
+                onTap: () {
+                  final lookup = {
+                    for (final p in PokemonRepository.all) p.katakana: p
+                  };
+                  final caught = StorageService.loadCaughtNames()
+                      .map((n) => lookup[n])
+                      .whereType<Object>()
+                      .cast<dynamic>()
+                      .toList();
+                  final shinyNames =
+                      StorageService.loadShinyCaughtNames().toSet();
+                  if (caught.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('まだポケモンをゲットしていないよ！'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                    return;
+                  }
+                  showDialog(
+                    context: context,
+                    builder: (_) => PokedexDialog(
+                      caughtPokemon: List.unmodifiable(
+                          caught.cast()),
+                      shinyCaughtNames: shinyNames,
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppTheme.blueAccent.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: AppTheme.blueAccent.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.menu_book_rounded,
+                          size: 16, color: AppTheme.blueAccent),
+                      SizedBox(width: 6),
+                      Text(
+                        'ずかん',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.blueAccent,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const Spacer(),
+              _PalettePicker(currentId: palette.id),
+            ],
+          ),
         ],
       ),
     );
@@ -255,7 +313,7 @@ class _KokugoModeDialog extends StatelessWidget {
           _ModeOption(
             emoji: '🌸',
             label: 'ひらがな',
-            description: '1もじずつれんしゅう',
+            description: 'ポケモンのなまえをなぞる',
             color: AppTheme.pinkAccent,
             onTap: () => Navigator.pop(context, _KokugoMode.hiragana),
           ),
@@ -271,7 +329,7 @@ class _KokugoModeDialog extends StatelessWidget {
           _ModeOption(
             emoji: '🌼',
             label: 'カタカナ',
-            description: '1もじずつれんしゅう',
+            description: 'ポケモンのなまえをなぞる',
             color: AppTheme.blueAccent,
             onTap: () => Navigator.pop(context, _KokugoMode.katakana),
           ),
