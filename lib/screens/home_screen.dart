@@ -1,6 +1,9 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../app_palette.dart';
 import '../app_theme.dart';
+import '../data/pokemon_data.dart';
+import '../widgets/pokemon_widgets.dart';
 import 'math_screen.dart';
 import 'pokemon_screen.dart' show PokemonPlayMode, PokemonScreen, PokedexDialog;
 import '../services/analytics_service.dart';
@@ -38,11 +41,31 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-class _LeftPanel extends StatelessWidget {
+class _LeftPanel extends StatefulWidget {
   const _LeftPanel();
 
   @override
+  State<_LeftPanel> createState() => _LeftPanelState();
+}
+
+class _LeftPanelState extends State<_LeftPanel> {
+  PokemonEntry? _pokemon;
+  bool _isShiny = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final pool = PokemonRepository.all;
+    if (pool.isNotEmpty) {
+      final rng = math.Random();
+      _pokemon = pool[rng.nextInt(pool.length)];
+      _isShiny = rng.nextDouble() < 0.2;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final pokemon = _pokemon;
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -64,18 +87,40 @@ class _LeftPanel extends StatelessWidget {
             height: 1.2,
           ),
         ),
-        const SizedBox(height: 40),
-        Container(
-          width: 160,
-          height: 160,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.6),
-            shape: BoxShape.circle,
+        const SizedBox(height: 24),
+        if (pokemon != null) ...[
+          PokemonImage(pokemon: pokemon, size: 140, isShiny: _isShiny),
+          const SizedBox(height: 8),
+          Text(
+            pokemon.katakana,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.white.withValues(alpha: 0.9),
+              letterSpacing: 2,
+            ),
           ),
-          child: const Center(
-            child: Text('🧒', style: TextStyle(fontSize: 80)),
+          if (_isShiny)
+            const Text(
+              '✨ いろちがい！',
+              style: TextStyle(
+                fontSize: 12,
+                color: Color(0xFFFFD700),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+        ] else
+          Container(
+            width: 140,
+            height: 140,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.6),
+              shape: BoxShape.circle,
+            ),
+            child: const Center(
+              child: Text('🧒', style: TextStyle(fontSize: 80)),
+            ),
           ),
-        ),
       ],
     );
   }
