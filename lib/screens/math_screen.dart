@@ -38,6 +38,10 @@ class _MathScreenState extends State<MathScreen> {
   bool _rewardIsShiny = false;
   int _prevPokemonIndex = -1;
 
+  // ラウンド開始時に事前選択する報酬ポケモン
+  PokemonEntry? _pendingRewardPokemon;
+  bool _pendingIsShiny = false;
+
   final List<PokemonEntry> _caughtPokemon = [];
   final Set<String> _shinyCaughtNames = {};
 
@@ -60,6 +64,15 @@ class _MathScreenState extends State<MathScreen> {
 
   void _startRound() {
     _problems = MathData.generateSet(_level, _random);
+    // 報酬ポケモンをラウンド開始時に事前選択
+    final pool = PokemonRepository.all;
+    int idx;
+    do {
+      idx = _random.nextInt(pool.length);
+    } while (idx == _prevPokemonIndex && pool.length > 1);
+    _prevPokemonIndex = idx;
+    _pendingRewardPokemon = pool[idx];
+    _pendingIsShiny = _random.nextDouble() < 0.2;
     _loadQuestion(0);
   }
 
@@ -90,20 +103,14 @@ class _MathScreenState extends State<MathScreen> {
 
   void _endRound() {
     PokemonEntry? reward;
-    if (_passed) {
-      final pool = PokemonRepository.all;
-      int idx;
-      do {
-        idx = _random.nextInt(pool.length);
-      } while (idx == _prevPokemonIndex && pool.length > 1);
-      _prevPokemonIndex = idx;
-      reward = pool[idx];
-      _caughtPokemon.add(reward);
+    final shiny = _passed && _pendingIsShiny;
+    if (_passed && _pendingRewardPokemon != null) {
+      reward = _pendingRewardPokemon;
+      _caughtPokemon.add(reward!);
       StorageService.saveCaughtNames(
           _caughtPokemon.map((p) => p.katakana).toList());
       SoundService.playCatch();
     }
-    final shiny = _passed && _random.nextDouble() < 0.2;
     AnalyticsService.logMathRoundComplete(
       level: _level.name,
       score: _correctCount,
@@ -130,6 +137,8 @@ class _MathScreenState extends State<MathScreen> {
       _showRoundResult = false;
       _rewardPokemon = null;
       _rewardIsShiny = false;
+      _pendingRewardPokemon = null;
+      _pendingIsShiny = false;
       _startRound();
     });
   }
@@ -140,6 +149,8 @@ class _MathScreenState extends State<MathScreen> {
       _correctCount = 0;
       _showRoundResult = false;
       _rewardPokemon = null;
+      _pendingRewardPokemon = null;
+      _pendingIsShiny = false;
       _startRound();
     });
   }
@@ -164,6 +175,8 @@ class _MathScreenState extends State<MathScreen> {
               onLevelSelect: _selectLevel,
               caughtPokemon: _caughtPokemon,
               shinyCaughtNames: _shinyCaughtNames,
+              pendingRewardPokemon: _pendingRewardPokemon,
+              pendingIsShiny: _pendingIsShiny,
             ),
           ),
           // ─── 右パネル ───
@@ -218,6 +231,8 @@ class _LeftPanel extends StatelessWidget {
   final Set<String> shinyCaughtNames;
   final VoidCallback onBack;
   final ValueChanged<MathLevel> onLevelSelect;
+  final PokemonEntry? pendingRewardPokemon;
+  final bool pendingIsShiny;
 
   const _LeftPanel({
     required this.level,
@@ -229,6 +244,8 @@ class _LeftPanel extends StatelessWidget {
     required this.shinyCaughtNames,
     required this.onBack,
     required this.onLevelSelect,
+    this.pendingRewardPokemon,
+    this.pendingIsShiny = false,
   });
 
   @override
@@ -376,6 +393,53 @@ class _LeftPanel extends StatelessWidget {
               );
             }),
           ),
+
+          const SizedBox(height: 12),
+
+          // 報酬ポケモンプレビュー
+          if (!showResult && pendingRewardPokemon != null) ...[
+            Center(
+              child: Text(
+                'ゲットのチャンス！',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: pendingRewardPokemon!.color,
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Center(
+              child: PokemonImage(
+                pokemon: pendingRewardPokemon!,
+                size: 100,
+                isShiny: pendingIsShiny,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Center(
+              child: Text(
+                pendingRewardPokemon!.katakana,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.darkText,
+                ),
+              ),
+            ),
+            if (pendingIsShiny)
+              const Center(
+                child: Text(
+                  '✨ いろちがい！',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFFFFD700),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            const SizedBox(height: 8),
+          ],
 
           const Spacer(flex: 1),
 
