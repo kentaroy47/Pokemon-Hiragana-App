@@ -109,6 +109,10 @@ class _MathScreenState extends State<MathScreen> {
       _caughtPokemon.add(reward!);
       StorageService.saveCaughtNames(
           _caughtPokemon.map((p) => p.katakana).toList());
+      if (shiny) {
+        _shinyCaughtNames.add(reward.katakana);
+        StorageService.saveShinyCaughtNames(_shinyCaughtNames);
+      }
       SoundService.playCatch();
     }
     AnalyticsService.logMathRoundComplete(
