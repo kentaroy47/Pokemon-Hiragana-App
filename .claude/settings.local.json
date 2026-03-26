@@ -28,7 +28,9 @@
       "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\([\\(n[''''language''''][''''name''''], n[''''name'''']\\) for n in d[''''names'''']][:10]\\)\")",
       "Bash(curl -s https://pokeapi.co/api/v2/pokemon-species/25/)",
       "Read(//tmp/**)",
-      "Bash(dart analyze:*)"
+      "Bash(dart analyze:*)",
+      "Bash(python -c \"import json; data=json.load\\(open\\(''assets/data/pokemon_all.json'', encoding=''utf-8''\\)\\); print\\(len\\(data\\)\\)\")",
+      "Bash(node -e \"const d=require\\(''./assets/data/pokemon_all.json''\\); console.log\\(d.length\\)\")"
     ]
   }
 }

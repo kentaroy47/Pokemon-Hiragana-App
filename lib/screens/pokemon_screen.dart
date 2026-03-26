@@ -357,7 +357,7 @@ class _LeftPanel extends StatelessWidget {
                         ? null
                         : () => showDialog(
                               context: context,
-                              builder: (_) => _PokedexDialog(
+                              builder: (_) => PokedexDialog(
                                 caughtPokemon: List.unmodifiable(caughtPokemon),
                                 shinyCaughtNames: shinyCaughtNames,
                               ),
@@ -761,20 +761,20 @@ class _CatchOverlayState extends State<_CatchOverlay>
 
 // ─── ゲットずかん ダイアログ ──────────────────────────────────────────────────
 
-class _PokedexDialog extends StatefulWidget {
+class PokedexDialog extends StatefulWidget {
   final List<PokemonEntry> caughtPokemon;
   final Set<String> shinyCaughtNames;
 
-  const _PokedexDialog({
+  const PokedexDialog({
     required this.caughtPokemon,
     required this.shinyCaughtNames,
   });
 
   @override
-  State<_PokedexDialog> createState() => _PokedexDialogState();
+  State<PokedexDialog> createState() => _PokedexDialogState();
 }
 
-class _PokedexDialogState extends State<_PokedexDialog>
+class _PokedexDialogState extends State<PokedexDialog>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 

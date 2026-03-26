@@ -8,6 +8,7 @@ import '../services/storage_service.dart';
 import '../services/sound_service.dart';
 import '../services/analytics_service.dart';
 import '../widgets/pokemon_widgets.dart';
+import 'pokemon_screen.dart' show PokedexDialog;
 
 // ─── さんすう画面 ────────────────────────────────────────────────────────────
 
@@ -38,6 +39,7 @@ class _MathScreenState extends State<MathScreen> {
   int _prevPokemonIndex = -1;
 
   final List<PokemonEntry> _caughtPokemon = [];
+  final Set<String> _shinyCaughtNames = {};
 
   MathProblem get _current => _problems[_questionIndex];
   bool get _passed => _correctCount >= _passingScore;
@@ -51,6 +53,7 @@ class _MathScreenState extends State<MathScreen> {
       final entry = lookup[name];
       if (entry != null) _caughtPokemon.add(entry);
     }
+    _shinyCaughtNames.addAll(StorageService.loadShinyCaughtNames());
     _startRound();
     AnalyticsService.logScreenView('math');
   }
@@ -159,6 +162,8 @@ class _MathScreenState extends State<MathScreen> {
               caughtCount: _caughtPokemon.length,
               onBack: () => Navigator.pop(context),
               onLevelSelect: _selectLevel,
+              caughtPokemon: _caughtPokemon,
+              shinyCaughtNames: _shinyCaughtNames,
             ),
           ),
           // ─── 右パネル ───
@@ -209,6 +214,8 @@ class _LeftPanel extends StatelessWidget {
   final int correctCount;
   final bool showResult;
   final int caughtCount;
+  final List<PokemonEntry> caughtPokemon;
+  final Set<String> shinyCaughtNames;
   final VoidCallback onBack;
   final ValueChanged<MathLevel> onLevelSelect;
 
@@ -218,6 +225,8 @@ class _LeftPanel extends StatelessWidget {
     required this.correctCount,
     required this.showResult,
     required this.caughtCount,
+    required this.caughtPokemon,
+    required this.shinyCaughtNames,
     required this.onBack,
     required this.onLevelSelect,
   });
@@ -388,6 +397,35 @@ class _LeftPanel extends StatelessWidget {
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
                     color: AppTheme.darkText,
+                  ),
+                ),
+                const Spacer(),
+                InkWell(
+                  onTap: caughtPokemon.isEmpty
+                      ? null
+                      : () => showDialog(
+                            context: context,
+                            builder: (_) => PokedexDialog(
+                              caughtPokemon: List.unmodifiable(caughtPokemon),
+                              shinyCaughtNames: shinyCaughtNames,
+                            ),
+                          ),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: caughtPokemon.isEmpty
+                          ? const Color(0xFFEEEEEE)
+                          : AppTheme.blueAccent.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.menu_book_rounded,
+                      size: 22,
+                      color: caughtPokemon.isEmpty
+                          ? AppTheme.textGray
+                          : AppTheme.blueAccent,
+                    ),
                   ),
                 ),
               ],
