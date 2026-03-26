@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../app_theme.dart';
 import '../data/pokemon_data.dart';
+import '../services/pokemon_repository.dart';
 import '../services/sound_service.dart';
 import '../services/storage_service.dart';
 import '../widgets/drawing_canvas.dart';
@@ -49,7 +50,7 @@ class _PokemonScreenState extends State<PokemonScreen> {
   @override
   void initState() {
     super.initState();
-    final lookup = {for (final p in pokemonList) p.katakana: p};
+    final lookup = {for (final p in PokemonRepository.all) p.katakana: p};
     final saved = StorageService.loadCaughtNames();
     for (final name in saved) {
       final entry = lookup[name];
@@ -57,21 +58,21 @@ class _PokemonScreenState extends State<PokemonScreen> {
     }
     _shinyCaughtNames.addAll(StorageService.loadShinyCaughtNames());
 
-    final idx = _random.nextInt(pokemonList.length);
+    final idx = _random.nextInt(PokemonRepository.all.length);
     _prevPokemonIndex = idx;
-    _pokemon = pokemonList[idx];
+    _pokemon = PokemonRepository.all[idx];
     _isShiny = widget.mode.isHard && _random.nextDouble() < 0.1;
   }
 
   void _pickNewPokemon() {
     int idx;
     do {
-      idx = _random.nextInt(pokemonList.length);
-    } while (idx == _prevPokemonIndex && pokemonList.length > 1);
+      idx = _random.nextInt(PokemonRepository.all.length);
+    } while (idx == _prevPokemonIndex && PokemonRepository.all.length > 1);
     _prevPokemonIndex = idx;
     setState(() {
       _sessionId++;
-      _pokemon = pokemonList[idx];
+      _pokemon = PokemonRepository.all[idx];
       _isShiny = widget.mode.isHard && _random.nextDouble() < 0.1;
       _charIndex = 0;
       _scores.clear();
