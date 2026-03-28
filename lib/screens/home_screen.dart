@@ -4,6 +4,8 @@ import '../app_palette.dart';
 import '../app_theme.dart';
 import '../data/pokemon_data.dart';
 import '../widgets/pokemon_widgets.dart';
+import 'clock_screen.dart';
+import 'katakana_quiz_screen.dart';
 import 'math_screen.dart';
 import 'pokemon_screen.dart' show PokemonPlayMode, PokemonScreen, PokedexDialog;
 import '../services/analytics_service.dart';
@@ -147,7 +149,7 @@ class _RightPanel extends StatelessWidget {
               color: AppTheme.darkText,
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 16),
 
           // こくご button
           _MenuButton(
@@ -202,7 +204,7 @@ class _RightPanel extends StatelessWidget {
               }
             },
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
           // さんすう button
           _MenuButton(
@@ -213,6 +215,37 @@ class _RightPanel extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const MathScreen()),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+
+          // カタカナをよもう！ button
+          _MenuButton(
+            emoji: '🌼',
+            label: 'カタカナをよもう！',
+            color: const Color(0xFFFF9F43),
+            onTap: () {
+              AnalyticsService.logScreenView('katakana_quiz');
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => const KatakanaQuizScreen()),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+
+          // 時計をよもう！ button
+          _MenuButton(
+            emoji: '🕐',
+            label: '時計をよもう！',
+            color: const Color(0xFF48BEFF),
+            onTap: () {
+              AnalyticsService.logScreenView('clock');
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ClockScreen()),
               );
             },
           ),

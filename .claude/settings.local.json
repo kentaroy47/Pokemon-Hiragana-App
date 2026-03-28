@@ -30,7 +30,13 @@
       "Read(//tmp/**)",
       "Bash(dart analyze:*)",
       "Bash(python -c \"import json; data=json.load\\(open\\(''assets/data/pokemon_all.json'', encoding=''utf-8''\\)\\); print\\(len\\(data\\)\\)\")",
-      "Bash(node -e \"const d=require\\(''./assets/data/pokemon_all.json''\\); console.log\\(d.length\\)\")"
+      "Bash(node -e \"const d=require\\(''./assets/data/pokemon_all.json''\\); console.log\\(d.length\\)\")",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(curl -s \"https://raw.githubusercontent.com/kentaroy47/app2/main/mori_no_gakkou/lib/screens/clock_game_screen.dart\")",
+      "Bash(curl -s \"https://raw.githubusercontent.com/kentaroy47/app2/main/mori_no_gakkou/lib/screens/katakana_game_screen.dart\")",
+      "Bash(curl -s \"https://raw.githubusercontent.com/kentaroy47/app2/main/mori_no_gakkou/lib/main.dart\")",
+      "Bash(flutter analyze:*)"
     ]
   }
 }
