@@ -25,50 +25,12 @@ const List<_Pair> _allPairs = [
   ('わ', 'ワ'), ('を', 'ヲ'), ('ん', 'ン'),
 ];
 
-// ─── レベル定義 ───────────────────────────────────────────────────────────────
-
-enum KatakanaLevel { row1, row2, row3, row4, mixed }
-
-extension _KatakanaLevelX on KatakanaLevel {
-  int get number => index + 1;
-
-  String get label {
-    switch (this) {
-      case KatakanaLevel.row1:
-        return 'あ〜こ';
-      case KatakanaLevel.row2:
-        return 'さ〜と';
-      case KatakanaLevel.row3:
-        return 'な〜ほ';
-      case KatakanaLevel.row4:
-        return 'ま〜ん';
-      case KatakanaLevel.mixed:
-        return 'ぜんぶ';
-    }
-  }
-
-  List<_Pair> get pool {
-    switch (this) {
-      case KatakanaLevel.row1:
-        return _allPairs.sublist(0, 10);
-      case KatakanaLevel.row2:
-        return _allPairs.sublist(10, 20);
-      case KatakanaLevel.row3:
-        return _allPairs.sublist(20, 30);
-      case KatakanaLevel.row4:
-        return _allPairs.sublist(30);
-      case KatakanaLevel.mixed:
-        return _allPairs;
-    }
-  }
-}
-
 // ─── 問題データ ───────────────────────────────────────────────────────────────
 
 class _Question {
   final String hira;
   final String correctKata;
-  final List<String> choices; // 4択（シャッフル済み）
+  final List<String> choices;
 
   const _Question({
     required this.hira,
@@ -92,7 +54,6 @@ class _KatakanaQuizScreenState extends State<KatakanaQuizScreen> {
 
   final _random = math.Random();
 
-  KatakanaLevel _level = KatakanaLevel.row1;
   int _questionIndex = 0;
   int _correctCount = 0;
 
@@ -126,7 +87,7 @@ class _KatakanaQuizScreenState extends State<KatakanaQuizScreen> {
   }
 
   void _startRound() {
-    _problems = _generateProblems(_level);
+    _problems = _generateProblems();
     final pool = PokemonRepository.all;
     int idx;
     do {
@@ -138,8 +99,8 @@ class _KatakanaQuizScreenState extends State<KatakanaQuizScreen> {
     _loadQuestion(0);
   }
 
-  List<_Question> _generateProblems(KatakanaLevel level) {
-    final pool = List<_Pair>.from(level.pool)..shuffle(_random);
+  List<_Question> _generateProblems() {
+    final pool = List<_Pair>.from(_allPairs)..shuffle(_random);
     return pool.take(_questionsPerRound).map((pair) {
       final correct = pair.$2;
       final wrongs = (List<_Pair>.from(_allPairs)
@@ -210,18 +171,6 @@ class _KatakanaQuizScreenState extends State<KatakanaQuizScreen> {
     });
   }
 
-  void _selectLevel(KatakanaLevel newLevel) {
-    setState(() {
-      _level = newLevel;
-      _correctCount = 0;
-      _showRoundResult = false;
-      _rewardPokemon = null;
-      _pendingRewardPokemon = null;
-      _pendingIsShiny = false;
-      _startRound();
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -230,9 +179,8 @@ class _KatakanaQuizScreenState extends State<KatakanaQuizScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SizedBox(
-            width: 260,
+            width: 220,
             child: _LeftPanel(
-              level: _level,
               questionIndex: _questionIndex,
               correctCount: _correctCount,
               showResult: _showRoundResult,
@@ -240,7 +188,6 @@ class _KatakanaQuizScreenState extends State<KatakanaQuizScreen> {
               caughtPokemon: _caughtPokemon,
               shinyCaughtNames: _shinyCaughtNames,
               onBack: () => Navigator.pop(context),
-              onLevelSelect: _selectLevel,
               pendingRewardPokemon: _pendingRewardPokemon,
               pendingIsShiny: _pendingIsShiny,
             ),
@@ -284,7 +231,6 @@ class _KatakanaQuizScreenState extends State<KatakanaQuizScreen> {
 // ─── 左パネル ─────────────────────────────────────────────────────────────────
 
 class _LeftPanel extends StatelessWidget {
-  final KatakanaLevel level;
   final int questionIndex;
   final int correctCount;
   final bool showResult;
@@ -292,12 +238,10 @@ class _LeftPanel extends StatelessWidget {
   final List<PokemonEntry> caughtPokemon;
   final Set<String> shinyCaughtNames;
   final VoidCallback onBack;
-  final ValueChanged<KatakanaLevel> onLevelSelect;
   final PokemonEntry? pendingRewardPokemon;
   final bool pendingIsShiny;
 
   const _LeftPanel({
-    required this.level,
     required this.questionIndex,
     required this.correctCount,
     required this.showResult,
@@ -305,7 +249,6 @@ class _LeftPanel extends StatelessWidget {
     required this.caughtPokemon,
     required this.shinyCaughtNames,
     required this.onBack,
-    required this.onLevelSelect,
     this.pendingRewardPokemon,
     this.pendingIsShiny = false,
   });
@@ -333,70 +276,26 @@ class _LeftPanel extends StatelessWidget {
                     side: const BorderSide(color: Color(0xFFCCCCCC)),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20)),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 16),
 
-                // レベル選択
-                ...KatakanaLevel.values.map((l) {
-                  final selected = l == level;
-                  const color = Color(0xFFFF9F43);
-                  return GestureDetector(
-                    onTap: selected ? null : () => onLevelSelect(l),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      margin: const EdgeInsets.symmetric(vertical: 2),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? color
-                            : color.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: selected
-                              ? color
-                              : color.withValues(alpha: 0.3),
-                          width: selected ? 2 : 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Text(
-                            'Lv.${l.number}',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: selected ? Colors.white : color,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              l.label,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: selected
-                                    ? Colors.white
-                                    : AppTheme.darkText,
-                                height: 1.3,
-                              ),
-                            ),
-                          ),
-                          if (selected)
-                            const Icon(Icons.play_arrow_rounded,
-                                color: Colors.white, size: 14),
-                        ],
-                      ),
+                // タイトル
+                const Center(
+                  child: Text(
+                    'カタカナをよもう！',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFFF9F43),
                     ),
-                  );
-                }),
-                const SizedBox(height: 8),
+                  ),
+                ),
+                const SizedBox(height: 12),
 
                 // 問題進捗
                 Center(
@@ -434,7 +333,8 @@ class _LeftPanel extends StatelessWidget {
                         ),
                       ),
                       child: done
-                          ? const Icon(Icons.check, size: 18, color: Colors.white)
+                          ? const Icon(Icons.check,
+                              size: 18, color: Colors.white)
                           : Center(
                               child: Text(
                                 '${i + 1}',
@@ -604,7 +504,8 @@ class _QuestionPanel extends StatelessWidget {
           flex: 4,
           child: Center(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
               decoration: BoxDecoration(
                 color: AppTheme.white,
                 borderRadius: BorderRadius.circular(24),
@@ -722,8 +623,8 @@ class _ChoiceButton extends StatelessWidget {
         overlay = const Positioned(
           top: 8,
           right: 8,
-          child: Icon(Icons.cancel_rounded,
-              color: Color(0xFFEF9A9A), size: 22),
+          child:
+              Icon(Icons.cancel_rounded, color: Color(0xFFEF9A9A), size: 22),
         );
       }
     }
@@ -881,8 +782,8 @@ class _RoundResultOverlayState extends State<_RoundResultOverlay>
                               right: 0,
                               child: Transform.rotate(
                                 angle: _spin.value,
-                                child: Pokeball(
-                                    color: pokemon.color, size: 36),
+                                child:
+                                    Pokeball(color: pokemon.color, size: 36),
                               ),
                             ),
                           ],
@@ -914,8 +815,8 @@ class _RoundResultOverlayState extends State<_RoundResultOverlay>
                           color: AppTheme.pinkAccent,
                           shadows: [
                             Shadow(
-                              color:
-                                  AppTheme.pinkAccent.withValues(alpha: 0.25),
+                              color: AppTheme.pinkAccent
+                                  .withValues(alpha: 0.25),
                               offset: const Offset(0, 5),
                               blurRadius: 10,
                             ),
