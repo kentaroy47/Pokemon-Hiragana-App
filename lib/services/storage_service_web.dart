@@ -11,6 +11,8 @@ external _JSStorage get _localStorage;
 const _key = 'pokemon_caught';
 const _shinyKey = 'pokemon_caught_shiny';
 const _paletteKey = 'app_palette';
+const _mathRoundsKey = 'math_rounds_completed';
+const _clockRoundsKey = 'clock_rounds_completed';
 
 /// ブラウザの localStorage を使ったデータ永続化サービス
 class StorageService {
@@ -64,6 +66,40 @@ class StorageService {
   static void savePaletteId(String id) {
     try {
       _localStorage.setItem(_paletteKey, id);
+    } catch (_) {}
+  }
+
+  /// さんすうの累計完了ラウンド数を読み込む
+  static int loadMathRoundsCompleted() {
+    try {
+      final raw = _localStorage.getItem(_mathRoundsKey)?.toDart ?? '';
+      return int.tryParse(raw) ?? 0;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  /// さんすうの累計完了ラウンド数を保存する
+  static void saveMathRoundsCompleted(int count) {
+    try {
+      _localStorage.setItem(_mathRoundsKey, '$count');
+    } catch (_) {}
+  }
+
+  /// 時計の累計完了ラウンド数を読み込む
+  static int loadClockRoundsCompleted() {
+    try {
+      final raw = _localStorage.getItem(_clockRoundsKey)?.toDart ?? '';
+      return int.tryParse(raw) ?? 0;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  /// 時計の累計完了ラウンド数を保存する
+  static void saveClockRoundsCompleted(int count) {
+    try {
+      _localStorage.setItem(_clockRoundsKey, '$count');
     } catch (_) {}
   }
 }

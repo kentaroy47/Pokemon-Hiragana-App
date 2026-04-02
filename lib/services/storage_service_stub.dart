@@ -6,4 +6,8 @@ class StorageService {
   static void saveShinyCaughtNames(Set<String> names) {}
   static String? loadPaletteId() => null;
   static void savePaletteId(String id) {}
+  static int loadMathRoundsCompleted() => 0;
+  static void saveMathRoundsCompleted(int count) {}
+  static int loadClockRoundsCompleted() => 0;
+  static void saveClockRoundsCompleted(int count) {}
 }

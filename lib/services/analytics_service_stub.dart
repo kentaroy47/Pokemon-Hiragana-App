@@ -6,6 +6,7 @@ class AnalyticsService {
     required int score,
     required bool passed,
     required bool isShiny,
+    required int roundsCompleted,
   }) {}
   static void logPokemonCaught({
     required String pokemonName,
@@ -13,4 +14,16 @@ class AnalyticsService {
     required String source,
   }) {}
   static void logKokugoModeSelected(String mode) {}
+  static void logKatakanaRoundComplete({
+    required int score,
+    required bool passed,
+    required bool isShiny,
+  }) {}
+  static void logClockRoundComplete({
+    required String level,
+    required int score,
+    required bool passed,
+    required bool isShiny,
+    required int roundsCompleted,
+  }) {}
 }

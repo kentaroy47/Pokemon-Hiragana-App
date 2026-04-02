@@ -4,6 +4,7 @@ import '../app_theme.dart';
 import '../data/pokemon_data.dart';
 import '../services/pokemon_repository.dart';
 import '../services/storage_service.dart';
+import '../services/analytics_service.dart';
 import '../services/sound_service.dart';
 import '../widgets/pokemon_widgets.dart';
 import 'pokemon_screen.dart' show PokedexDialog;
@@ -106,6 +107,7 @@ class _ClockScreenState extends State<ClockScreen> {
     }
     _shinyCaughtNames.addAll(StorageService.loadShinyCaughtNames());
     _startRound();
+    AnalyticsService.logScreenView('clock');
   }
 
   void _startRound() {
@@ -178,6 +180,22 @@ class _ClockScreenState extends State<ClockScreen> {
         StorageService.saveShinyCaughtNames(_shinyCaughtNames);
       }
       SoundService.playCatch();
+    }
+    final rounds = StorageService.loadClockRoundsCompleted() + 1;
+    StorageService.saveClockRoundsCompleted(rounds);
+    AnalyticsService.logClockRoundComplete(
+      level: _level.name,
+      score: _correctCount,
+      passed: _passed,
+      isShiny: shiny,
+      roundsCompleted: rounds,
+    );
+    if (reward != null) {
+      AnalyticsService.logPokemonCaught(
+        pokemonName: reward.katakana,
+        isShiny: shiny,
+        source: 'clock',
+      );
     }
     setState(() {
       _rewardPokemon = reward;

@@ -16,12 +16,14 @@ class AnalyticsService {
     required int score,
     required bool passed,
     required bool isShiny,
+    required int roundsCompleted,
   }) {
     _gtag('event'.toJS, 'math_round_complete'.toJS, <String, Object>{
       'level': level,
       'score': score,
       'passed': passed,
       'is_shiny': isShiny,
+      'rounds_completed': roundsCompleted,
     }.jsify());
   }
 
@@ -40,6 +42,34 @@ class AnalyticsService {
   static void logKokugoModeSelected(String mode) {
     _gtag('event'.toJS, 'kokugo_mode_selected'.toJS, <String, Object>{
       'mode': mode,
+    }.jsify());
+  }
+
+  static void logKatakanaRoundComplete({
+    required int score,
+    required bool passed,
+    required bool isShiny,
+  }) {
+    _gtag('event'.toJS, 'katakana_round_complete'.toJS, <String, Object>{
+      'score': score,
+      'passed': passed,
+      'is_shiny': isShiny,
+    }.jsify());
+  }
+
+  static void logClockRoundComplete({
+    required String level,
+    required int score,
+    required bool passed,
+    required bool isShiny,
+    required int roundsCompleted,
+  }) {
+    _gtag('event'.toJS, 'clock_round_complete'.toJS, <String, Object>{
+      'level': level,
+      'score': score,
+      'passed': passed,
+      'is_shiny': isShiny,
+      'rounds_completed': roundsCompleted,
     }.jsify());
   }
 }

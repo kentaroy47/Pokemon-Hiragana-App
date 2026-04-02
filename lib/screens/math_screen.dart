@@ -115,11 +115,14 @@ class _MathScreenState extends State<MathScreen> {
       }
       SoundService.playCatch();
     }
+    final rounds = StorageService.loadMathRoundsCompleted() + 1;
+    StorageService.saveMathRoundsCompleted(rounds);
     AnalyticsService.logMathRoundComplete(
       level: _level.name,
       score: _correctCount,
       passed: _passed,
       isShiny: shiny,
+      roundsCompleted: rounds,
     );
     if (reward != null) {
       AnalyticsService.logPokemonCaught(
