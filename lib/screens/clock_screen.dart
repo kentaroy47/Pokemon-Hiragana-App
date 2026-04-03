@@ -76,10 +76,10 @@ class _ClockScreenState extends State<ClockScreen> {
   final _random = math.Random();
 
   ClockLevel _level = ClockLevel.exact;
-  int _questionIndex = 0;
+  int _totalAsked = 0;
   int _correctCount = 0;
 
-  late List<_ClockQuestion> _problems;
+  late _ClockQuestion _current;
   String? _selectedAnswer;
 
   bool _showRoundResult = false;
@@ -92,9 +92,6 @@ class _ClockScreenState extends State<ClockScreen> {
 
   final List<PokemonEntry> _caughtPokemon = [];
   final Set<String> _shinyCaughtNames = {};
-
-  _ClockQuestion get _current => _problems[_questionIndex];
-  bool get _passed => _correctCount >= _passingScore;
 
   @override
   void initState() {
@@ -110,7 +107,10 @@ class _ClockScreenState extends State<ClockScreen> {
   }
 
   void _startRound() {
-    _problems = _generateProblems(_level);
+    _totalAsked = 0;
+    _correctCount = 0;
+    _current = _generateQuestion(_level);
+    _selectedAnswer = null;
     final pool = PokemonRepository.all;
     int idx;
     do {
@@ -119,32 +119,21 @@ class _ClockScreenState extends State<ClockScreen> {
     _prevPokemonIndex = idx;
     _pendingRewardPokemon = pool[idx];
     _pendingIsShiny = _random.nextDouble() < 0.2;
-    _loadQuestion(0);
   }
 
-  List<_ClockQuestion> _generateProblems(ClockLevel level) {
-    return List.generate(5, (_) {
-      final h = _random.nextInt(12) + 1;
-      final m = level.randomMinute(_random);
-      final correct = _timeLabel(h, m);
-
-      // 3つの不正解選択肢（同じ時刻が出ないように）
-      final wrongs = <String>{};
-      while (wrongs.length < 3) {
-        final wh = _random.nextInt(12) + 1;
-        final wm = level.randomMinute(_random);
-        final w = _timeLabel(wh, wm);
-        if (w != correct) wrongs.add(w);
-      }
-
-      final choices = [correct, ...wrongs]..shuffle(_random);
-      return _ClockQuestion(hour: h, minute: m, choices: choices);
-    });
-  }
-
-  void _loadQuestion(int index) {
-    _questionIndex = index;
-    _selectedAnswer = null;
+  _ClockQuestion _generateQuestion(ClockLevel level) {
+    final h = _random.nextInt(12) + 1;
+    final m = level.randomMinute(_random);
+    final correct = _timeLabel(h, m);
+    final wrongs = <String>{};
+    while (wrongs.length < 3) {
+      final wh = _random.nextInt(12) + 1;
+      final wm = level.randomMinute(_random);
+      final w = _timeLabel(wh, wm);
+      if (w != correct) wrongs.add(w);
+    }
+    final choices = [correct, ...wrongs]..shuffle(_random);
+    return _ClockQuestion(hour: h, minute: m, choices: choices);
   }
 
   void _onAnswerTap(String choice) {
@@ -153,6 +142,7 @@ class _ClockScreenState extends State<ClockScreen> {
     setState(() {
       _selectedAnswer = choice;
       if (correct) _correctCount++;
+      _totalAsked++;
     });
     if (correct) SoundService.playStrokeComplete();
 
@@ -161,18 +151,18 @@ class _ClockScreenState extends State<ClockScreen> {
       if (_correctCount >= _passingScore) {
         _endRound();
       } else {
-        if (_questionIndex + 1 >= _problems.length) {
-          _problems.addAll(_generateProblems(_level));
-        }
-        setState(() => _loadQuestion(_questionIndex + 1));
+        setState(() {
+          _current = _generateQuestion(_level);
+          _selectedAnswer = null;
+        });
       }
     });
   }
 
   void _endRound() {
     PokemonEntry? reward;
-    final shiny = _passed && _pendingIsShiny;
-    if (_passed && _pendingRewardPokemon != null) {
+    final shiny = _pendingIsShiny;
+    if (_pendingRewardPokemon != null) {
       reward = _pendingRewardPokemon;
       _caughtPokemon.add(reward!);
       StorageService.saveCaughtNames(
@@ -188,7 +178,7 @@ class _ClockScreenState extends State<ClockScreen> {
     AnalyticsService.logClockRoundComplete(
       level: _level.name,
       score: _correctCount,
-      passed: _passed,
+      passed: true,
       isShiny: shiny,
       roundsCompleted: rounds,
     );
@@ -241,7 +231,7 @@ class _ClockScreenState extends State<ClockScreen> {
             width: 260,
             child: _LeftPanel(
               level: _level,
-              questionIndex: _questionIndex,
+              totalAsked: _totalAsked,
               correctCount: _correctCount,
               showResult: _showRoundResult,
               caughtCount: _caughtPokemon.length,
@@ -262,7 +252,7 @@ class _ClockScreenState extends State<ClockScreen> {
                       ? const SizedBox.shrink()
                       : _QuestionPanel(
                           question: _current,
-                          questionIndex: _questionIndex,
+                          totalAsked: _totalAsked,
                           selectedAnswer: _selectedAnswer,
                           onAnswerTap: _onAnswerTap,
                         ),
@@ -271,12 +261,12 @@ class _ClockScreenState extends State<ClockScreen> {
                   _RoundResultOverlay(
                     correctCount: _correctCount,
                     total: _passingScore,
-                    passed: _passed,
+                    passed: true,
                     rewardPokemon: _rewardPokemon,
                     isShiny: _rewardIsShiny,
                     onNext: _nextRound,
                   ),
-                if (_showRoundResult && _passed && _rewardPokemon != null)
+                if (_showRoundResult && _rewardPokemon != null)
                   Positioned.fill(
                     child: ConfettiOverlay(baseColor: _rewardPokemon!.color),
                   ),
@@ -293,7 +283,7 @@ class _ClockScreenState extends State<ClockScreen> {
 
 class _LeftPanel extends StatelessWidget {
   final ClockLevel level;
-  final int questionIndex;
+  final int totalAsked;
   final int correctCount;
   final bool showResult;
   final int caughtCount;
@@ -306,7 +296,7 @@ class _LeftPanel extends StatelessWidget {
 
   const _LeftPanel({
     required this.level,
-    required this.questionIndex,
+    required this.totalAsked,
     required this.correctCount,
     required this.showResult,
     required this.caughtCount,
@@ -409,7 +399,7 @@ class _LeftPanel extends StatelessWidget {
                 // 正解数プログレス
                 Center(
                   child: Text(
-                    'もんだい ${questionIndex + 1} もんめ',
+                    'もんだい ${totalAsked + 1} もんめ',
                     style: const TextStyle(
                         fontSize: 11,
                         color: AppTheme.textGray,
@@ -559,13 +549,13 @@ class _LeftPanel extends StatelessWidget {
 
 class _QuestionPanel extends StatelessWidget {
   final _ClockQuestion question;
-  final int questionIndex;
+  final int totalAsked;
   final String? selectedAnswer;
   final ValueChanged<String> onAnswerTap;
 
   const _QuestionPanel({
     required this.question,
-    required this.questionIndex,
+    required this.totalAsked,
     required this.selectedAnswer,
     required this.onAnswerTap,
   });
@@ -575,7 +565,7 @@ class _QuestionPanel extends StatelessWidget {
     return Column(
       children: [
         Text(
-          'もんだい ${questionIndex + 1} / 5',
+          'もんだい ${totalAsked + 1} もんめ',
           style: const TextStyle(
             fontSize: 16,
             color: AppTheme.textGray,

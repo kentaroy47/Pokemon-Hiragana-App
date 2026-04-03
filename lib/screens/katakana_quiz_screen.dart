@@ -54,10 +54,10 @@ class _KatakanaQuizScreenState extends State<KatakanaQuizScreen> {
 
   final _random = math.Random();
 
-  int _questionIndex = 0;
+  int _totalAsked = 0;
   int _correctCount = 0;
 
-  late List<_Question> _problems;
+  late _Question _current;
   String? _selectedAnswer;
 
   bool _showRoundResult = false;
@@ -70,9 +70,6 @@ class _KatakanaQuizScreenState extends State<KatakanaQuizScreen> {
 
   final List<PokemonEntry> _caughtPokemon = [];
   final Set<String> _shinyCaughtNames = {};
-
-  _Question get _current => _problems[_questionIndex];
-  bool get _passed => _correctCount >= _passingScore;
 
   @override
   void initState() {
@@ -88,7 +85,10 @@ class _KatakanaQuizScreenState extends State<KatakanaQuizScreen> {
   }
 
   void _startRound() {
-    _problems = _generateProblems();
+    _totalAsked = 0;
+    _correctCount = 0;
+    _current = _generateQuestion();
+    _selectedAnswer = null;
     final pool = PokemonRepository.all;
     int idx;
     do {
@@ -97,27 +97,19 @@ class _KatakanaQuizScreenState extends State<KatakanaQuizScreen> {
     _prevPokemonIndex = idx;
     _pendingRewardPokemon = pool[idx];
     _pendingIsShiny = _random.nextDouble() < 0.2;
-    _loadQuestion(0);
   }
 
-  List<_Question> _generateProblems() {
-    final pool = List<_Pair>.from(_allPairs)..shuffle(_random);
-    return pool.take(5).map((pair) {
-      final correct = pair.$2;
-      final wrongs = (List<_Pair>.from(_allPairs)
-            ..removeWhere((p) => p.$2 == correct)
-            ..shuffle(_random))
-          .take(3)
-          .map((p) => p.$2)
-          .toList();
-      final choices = [correct, ...wrongs]..shuffle(_random);
-      return _Question(hira: pair.$1, correctKata: correct, choices: choices);
-    }).toList();
-  }
-
-  void _loadQuestion(int index) {
-    _questionIndex = index;
-    _selectedAnswer = null;
+  _Question _generateQuestion() {
+    final pair = _allPairs[_random.nextInt(_allPairs.length)];
+    final correct = pair.$2;
+    final wrongs = (List<_Pair>.from(_allPairs)
+          ..removeWhere((p) => p.$2 == correct)
+          ..shuffle(_random))
+        .take(3)
+        .map((p) => p.$2)
+        .toList();
+    final choices = [correct, ...wrongs]..shuffle(_random);
+    return _Question(hira: pair.$1, correctKata: correct, choices: choices);
   }
 
   void _onAnswerTap(String choice) {
@@ -126,6 +118,7 @@ class _KatakanaQuizScreenState extends State<KatakanaQuizScreen> {
     setState(() {
       _selectedAnswer = choice;
       if (correct) _correctCount++;
+      _totalAsked++;
     });
     if (correct) SoundService.playStrokeComplete();
 
@@ -134,18 +127,18 @@ class _KatakanaQuizScreenState extends State<KatakanaQuizScreen> {
       if (_correctCount >= _passingScore) {
         _endRound();
       } else {
-        if (_questionIndex + 1 >= _problems.length) {
-          _problems.addAll(_generateProblems());
-        }
-        setState(() => _loadQuestion(_questionIndex + 1));
+        setState(() {
+          _current = _generateQuestion();
+          _selectedAnswer = null;
+        });
       }
     });
   }
 
   void _endRound() {
     PokemonEntry? reward;
-    final shiny = _passed && _pendingIsShiny;
-    if (_passed && _pendingRewardPokemon != null) {
+    final shiny = _pendingIsShiny;
+    if (_pendingRewardPokemon != null) {
       reward = _pendingRewardPokemon;
       _caughtPokemon.add(reward!);
       StorageService.saveCaughtNames(
@@ -158,7 +151,7 @@ class _KatakanaQuizScreenState extends State<KatakanaQuizScreen> {
     }
     AnalyticsService.logKatakanaRoundComplete(
       score: _correctCount,
-      passed: _passed,
+      passed: true,
       isShiny: shiny,
     );
     if (reward != null) {
@@ -197,7 +190,7 @@ class _KatakanaQuizScreenState extends State<KatakanaQuizScreen> {
           SizedBox(
             width: 220,
             child: _LeftPanel(
-              questionIndex: _questionIndex,
+              totalAsked: _totalAsked,
               correctCount: _correctCount,
               showResult: _showRoundResult,
               caughtCount: _caughtPokemon.length,
@@ -217,7 +210,7 @@ class _KatakanaQuizScreenState extends State<KatakanaQuizScreen> {
                       ? const SizedBox.shrink()
                       : _QuestionPanel(
                           question: _current,
-                          questionIndex: _questionIndex,
+                          totalAsked: _totalAsked,
                           selectedAnswer: _selectedAnswer,
                           onAnswerTap: _onAnswerTap,
                         ),
@@ -226,12 +219,12 @@ class _KatakanaQuizScreenState extends State<KatakanaQuizScreen> {
                   _RoundResultOverlay(
                     correctCount: _correctCount,
                     total: _passingScore,
-                    passed: _passed,
+                    passed: true,
                     rewardPokemon: _rewardPokemon,
                     isShiny: _rewardIsShiny,
                     onNext: _nextRound,
                   ),
-                if (_showRoundResult && _passed && _rewardPokemon != null)
+                if (_showRoundResult && _rewardPokemon != null)
                   Positioned.fill(
                     child: ConfettiOverlay(baseColor: _rewardPokemon!.color),
                   ),
@@ -247,7 +240,7 @@ class _KatakanaQuizScreenState extends State<KatakanaQuizScreen> {
 // ─── 左パネル ─────────────────────────────────────────────────────────────────
 
 class _LeftPanel extends StatelessWidget {
-  final int questionIndex;
+  final int totalAsked;
   final int correctCount;
   final bool showResult;
   final int caughtCount;
@@ -258,7 +251,7 @@ class _LeftPanel extends StatelessWidget {
   final bool pendingIsShiny;
 
   const _LeftPanel({
-    required this.questionIndex,
+    required this.totalAsked,
     required this.correctCount,
     required this.showResult,
     required this.caughtCount,
@@ -316,7 +309,7 @@ class _LeftPanel extends StatelessWidget {
                 // 正解数プログレス
                 Center(
                   child: Text(
-                    'もんだい ${questionIndex + 1} もんめ',
+                    'もんだい ${totalAsked + 1} もんめ',
                     style: const TextStyle(
                         fontSize: 11,
                         color: AppTheme.textGray,
@@ -466,13 +459,13 @@ class _LeftPanel extends StatelessWidget {
 
 class _QuestionPanel extends StatelessWidget {
   final _Question question;
-  final int questionIndex;
+  final int totalAsked;
   final String? selectedAnswer;
   final ValueChanged<String> onAnswerTap;
 
   const _QuestionPanel({
     required this.question,
-    required this.questionIndex,
+    required this.totalAsked,
     required this.selectedAnswer,
     required this.onAnswerTap,
   });
@@ -482,7 +475,7 @@ class _QuestionPanel extends StatelessWidget {
     return Column(
       children: [
         Text(
-          'もんだい ${questionIndex + 1} / 5',
+          'もんだい ${totalAsked + 1} もんめ',
           style: const TextStyle(
             fontSize: 16,
             color: AppTheme.textGray,
