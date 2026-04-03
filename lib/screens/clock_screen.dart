@@ -71,7 +71,6 @@ class ClockScreen extends StatefulWidget {
 }
 
 class _ClockScreenState extends State<ClockScreen> {
-  static const _questionsPerRound = 5;
   static const _passingScore = 3;
 
   final _random = math.Random();
@@ -124,7 +123,7 @@ class _ClockScreenState extends State<ClockScreen> {
   }
 
   List<_ClockQuestion> _generateProblems(ClockLevel level) {
-    return List.generate(_questionsPerRound, (_) {
+    return List.generate(5, (_) {
       final h = _random.nextInt(12) + 1;
       final m = level.randomMinute(_random);
       final correct = _timeLabel(h, m);
@@ -159,10 +158,13 @@ class _ClockScreenState extends State<ClockScreen> {
 
     Future.delayed(const Duration(milliseconds: 900), () {
       if (!mounted) return;
-      if (_questionIndex + 1 < _questionsPerRound) {
-        setState(() => _loadQuestion(_questionIndex + 1));
-      } else {
+      if (_correctCount >= _passingScore) {
         _endRound();
+      } else {
+        if (_questionIndex + 1 >= _problems.length) {
+          _problems.addAll(_generateProblems(_level));
+        }
+        setState(() => _loadQuestion(_questionIndex + 1));
       }
     });
   }
@@ -268,7 +270,7 @@ class _ClockScreenState extends State<ClockScreen> {
                 if (_showRoundResult)
                   _RoundResultOverlay(
                     correctCount: _correctCount,
-                    total: _questionsPerRound,
+                    total: _passingScore,
                     passed: _passed,
                     rewardPokemon: _rewardPokemon,
                     isShiny: _rewardIsShiny,
@@ -404,58 +406,42 @@ class _LeftPanel extends StatelessWidget {
                 }),
                 const SizedBox(height: 8),
 
-                // 問題進捗
+                // 正解数プログレス
                 Center(
                   child: Text(
-                    'もんだい',
-                    style: TextStyle(
+                    'もんだい ${questionIndex + 1} もんめ',
+                    style: const TextStyle(
                         fontSize: 11,
                         color: AppTheme.textGray,
                         fontWeight: FontWeight.bold),
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(5, (i) {
-                    final done = i < (showResult ? 5 : questionIndex);
-                    final current = !showResult && i == questionIndex;
-                    return Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: done
-                            ? AppTheme.greenStroke
-                            : current
-                                ? const Color(0xFF48BEFF)
-                                    .withValues(alpha: 0.2)
-                                : const Color(0xFFEEEEEE),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: current
-                              ? const Color(0xFF48BEFF)
-                              : Colors.transparent,
-                          width: 2,
-                        ),
+                  children: List.generate(3, (i) {
+                    final filled = i < correctCount;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: Icon(
+                        filled ? Icons.star_rounded : Icons.star_outline_rounded,
+                        size: 36,
+                        color: filled
+                            ? const Color(0xFF48BEFF)
+                            : const Color(0xFFDDDDDD),
                       ),
-                      child: done
-                          ? const Icon(Icons.check,
-                              size: 18, color: Colors.white)
-                          : Center(
-                              child: Text(
-                                '${i + 1}',
-                                style: TextStyle(
-                                  fontSize: current ? 14 : 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: current
-                                      ? const Color(0xFF48BEFF)
-                                      : AppTheme.textGray,
-                                ),
-                              ),
-                            ),
                     );
                   }),
+                ),
+                Center(
+                  child: Text(
+                    '$correctCount / 3 せいかい',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textGray,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 12),
 
