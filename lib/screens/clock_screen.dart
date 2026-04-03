@@ -71,7 +71,7 @@ class ClockScreen extends StatefulWidget {
 }
 
 class _ClockScreenState extends State<ClockScreen> {
-  static const _passingScore = 3;
+  static const _passingScore = 5;
 
   final _random = math.Random();
 
@@ -419,7 +419,7 @@ class _LeftPanel extends StatelessWidget {
                 const SizedBox(height: 6),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(3, (i) {
+                  children: List.generate(5, (i) {
                     final filled = i < correctCount;
                     return Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 6),
@@ -435,7 +435,7 @@ class _LeftPanel extends StatelessWidget {
                 ),
                 Center(
                   child: Text(
-                    '$correctCount / 3 せいかい',
+                    '$correctCount / 5 せいかい',
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
