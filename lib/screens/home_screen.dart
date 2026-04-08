@@ -285,6 +285,8 @@ class _RightPanel extends StatelessWidget {
             },
           ),
 
+          const SizedBox(height: 12),
+          const _TodayStatsRow(),
           const Spacer(),
 
           // 下段：図鑑 + パレット選択
@@ -567,6 +569,93 @@ class _PalettePicker extends StatelessWidget {
             ),
           );
         }),
+      ],
+    );
+  }
+}
+
+// ─── きょうのきろく ────────────────────────────────────────────────────────────
+
+class _TodayStatsRow extends StatelessWidget {
+  const _TodayStatsRow();
+
+  @override
+  Widget build(BuildContext context) {
+    const drills = [
+      ('hiragana', '📖', 'こくご'),
+      ('math', '🔢', 'さんすう'),
+      ('katakana_quiz', '🌼', 'カタカナ'),
+      ('clock', '🕐', '時計'),
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'きょうのきろく',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: AppTheme.textGray,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: drills.map((d) {
+            final (key, emoji, label) = d;
+            return Expanded(
+              child: ValueListenableBuilder<int>(
+                valueListenable: DailyStatsService.drillNotifier(key),
+                builder: (context, count, _) {
+                  final done = count > 0;
+                  return Container(
+                    margin: const EdgeInsets.only(right: 6),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: done
+                          ? const Color(0xFFE8F5E9)
+                          : const Color(0xFFF5F5F5),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: done
+                            ? const Color(0xFF81C784)
+                            : const Color(0xFFE0E0E0),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(emoji,
+                            style: const TextStyle(fontSize: 16)),
+                        const SizedBox(height: 2),
+                        Text(
+                          label,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: done
+                                ? const Color(0xFF2E7D32)
+                                : AppTheme.textGray,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          done ? '$countかい' : '-',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: done
+                                ? const Color(0xFF388E3C)
+                                : const Color(0xFFBBBBBB),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            );
+          }).toList(),
+        ),
       ],
     );
   }
