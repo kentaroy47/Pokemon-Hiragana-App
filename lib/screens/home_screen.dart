@@ -274,7 +274,7 @@ class _RightPanel extends StatelessWidget {
           // 時計をよもう！ button
           _MenuButton(
             emoji: '🕐',
-            label: '時計をよもう！',
+            label: 'とけいをよもう！',
             color: const Color(0xFF48BEFF),
             onTap: () {
               AnalyticsService.logScreenView('clock');
@@ -585,7 +585,7 @@ class _TodayStatsRow extends StatelessWidget {
       ('hiragana', '📖', 'こくご'),
       ('math', '🔢', 'さんすう'),
       ('katakana_quiz', '🌼', 'カタカナ'),
-      ('clock', '🕐', '時計'),
+      ('clock', '🕐', 'とけい'),
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
