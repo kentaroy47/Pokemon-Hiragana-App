@@ -36,7 +36,13 @@
       "Bash(curl -s \"https://raw.githubusercontent.com/kentaroy47/app2/main/mori_no_gakkou/lib/screens/clock_game_screen.dart\")",
       "Bash(curl -s \"https://raw.githubusercontent.com/kentaroy47/app2/main/mori_no_gakkou/lib/screens/katakana_game_screen.dart\")",
       "Bash(curl -s \"https://raw.githubusercontent.com/kentaroy47/app2/main/mori_no_gakkou/lib/main.dart\")",
-      "Bash(flutter analyze:*)"
+      "Bash(flutter analyze:*)",
+      "Bash(~/flutter/bin/flutter analyze:*)",
+      "Bash(cmd.exe /c \"cd /d \\\\\"g:\\\\マイドライブ\\\\010_Codes\\\\hiragana_app\\\\hiragana\\\\\" && flutter analyze --no-fatal-infos 2>&1\")",
+      "Bash(powershell.exe -Command \"cd 'g:\\\\マイドライブ\\\\010_Codes\\\\hiragana_app\\\\hiragana'; flutter analyze --no-fatal-infos 2>&1 | Select-Object -Last 30\")",
+      "Bash(powershell.exe -Command 'Get-Command flutter -ErrorAction SilentlyContinue; $env:PATH -split '\\\\'';'\\\\'' | Where-Object { $_ -like '\\\\''*flutter*'\\\\'' }')",
+      "Bash(powershell.exe -Command \"Get-ChildItem 'C:\\\\Users\\\\ken' -Filter 'flutter' -Recurse -Depth 3 -ErrorAction SilentlyContinue | Select-Object FullName -First 5\")",
+      "Bash(powershell.exe -Command \"cd 'g:\\\\マイドライブ\\\\010_Codes\\\\hiragana_app\\\\hiragana'; & 'C:\\\\Users\\\\ken\\\\Documents\\\\flutter\\\\bin\\\\flutter.bat' analyze --no-fatal-infos 2>&1 | Select-Object -Last 30\")"
     ]
   }
 }

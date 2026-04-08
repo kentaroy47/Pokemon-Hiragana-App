@@ -13,6 +13,9 @@ const _shinyKey = 'pokemon_caught_shiny';
 const _paletteKey = 'app_palette';
 const _mathRoundsKey = 'math_rounds_completed';
 const _clockRoundsKey = 'clock_rounds_completed';
+const _todayDateKey = 'today_date_jst';
+const _todayCaughtKey = 'today_caught_count';
+const _drillSessionPrefix = 'today_sessions_';
 
 /// ブラウザの localStorage を使ったデータ永続化サービス
 class StorageService {
@@ -68,6 +71,79 @@ class StorageService {
       _localStorage.setItem(_paletteKey, id);
     } catch (_) {}
   }
+
+  // ─── 今日（JST）の統計 ─────────────────────────────────────────────────────
+
+  static String _jstDateString() {
+    final jst = DateTime.now().toUtc().add(const Duration(hours: 9));
+    return '${jst.year}-${jst.month.toString().padLeft(2, '0')}-${jst.day.toString().padLeft(2, '0')}';
+  }
+
+  /// 日付が変わっていたら今日の統計をリセットする
+  static void _resetTodayIfNeeded() {
+    final today = _jstDateString();
+    final stored = _localStorage.getItem(_todayDateKey)?.toDart ?? '';
+    if (stored == today) return;
+    _localStorage.setItem(_todayDateKey, today);
+    _localStorage.setItem(_todayCaughtKey, '0');
+    for (final drill in ['hiragana', 'math', 'clock', 'katakana_quiz']) {
+      _localStorage.setItem('$_drillSessionPrefix$drill', '0');
+    }
+  }
+
+  /// 今日ゲットしたポケモンの数を読み込む（日付リセットあり）
+  static int loadTodayCaughtCount() {
+    try {
+      _resetTodayIfNeeded();
+      final raw = _localStorage.getItem(_todayCaughtKey)?.toDart ?? '';
+      return int.tryParse(raw) ?? 0;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  /// 今日ゲットしたポケモン数を1増やす
+  static void incrementTodayCaughtCount() {
+    try {
+      _resetTodayIfNeeded();
+      final current =
+          int.tryParse(_localStorage.getItem(_todayCaughtKey)?.toDart ?? '') ??
+              0;
+      _localStorage.setItem(_todayCaughtKey, '${current + 1}');
+    } catch (_) {}
+  }
+
+  /// 今日の指定ドリルのセッション数を読み込む
+  static int loadTodayDrillSessions(String drillKey) {
+    try {
+      _resetTodayIfNeeded();
+      final raw =
+          _localStorage.getItem('$_drillSessionPrefix$drillKey')?.toDart ?? '';
+      return int.tryParse(raw) ?? 0;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  /// 今日の指定ドリルのセッション数を1増やし、新しい値を返す
+  static int incrementTodayDrillSessions(String drillKey) {
+    try {
+      _resetTodayIfNeeded();
+      final current = int.tryParse(
+              _localStorage
+                  .getItem('$_drillSessionPrefix$drillKey')
+                  ?.toDart ??
+                  '') ??
+          0;
+      final next = current + 1;
+      _localStorage.setItem('$_drillSessionPrefix$drillKey', '$next');
+      return next;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  // ─── さんすう・時計の累計 ──────────────────────────────────────────────────
 
   /// さんすうの累計完了ラウンド数を読み込む
   static int loadMathRoundsCompleted() {

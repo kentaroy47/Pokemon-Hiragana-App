@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'app_palette.dart';
 import 'screens/home_screen.dart';
+import 'services/daily_stats_service.dart';
 import 'services/pokemon_repository.dart';
 import 'services/storage_service.dart';
 
@@ -12,6 +13,7 @@ void main() async {
     DeviceOrientation.landscapeRight,
   ]);
   await PokemonRepository.init();
+  DailyStatsService.init();
 
   // 保存済みパレットを復元
   final savedId = StorageService.loadPaletteId();

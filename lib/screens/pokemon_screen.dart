@@ -5,8 +5,10 @@ import 'package:http/http.dart' as http;
 import '../app_theme.dart';
 import '../data/pokemon_data.dart';
 import '../services/pokemon_repository.dart';
+import '../services/daily_stats_service.dart';
 import '../services/sound_service.dart';
 import '../services/storage_service.dart';
+import '../widgets/drill_suggestion_dialog.dart';
 import '../widgets/drawing_canvas.dart';
 import '../widgets/pokemon_widgets.dart';
 
@@ -133,6 +135,16 @@ class _PokemonScreenState extends State<PokemonScreen> {
             _caughtPokemon.map((p) => p.katakana).toList());
         if (_isShiny) {
           StorageService.saveShinyCaughtNames(_shinyCaughtNames);
+        }
+        DailyStatsService.incrementCaught();
+        final sessions =
+            DailyStatsService.incrementDrillSessions('hiragana');
+        if (sessions > 0 && sessions % 5 == 0 && mounted) {
+          Future.delayed(const Duration(milliseconds: 800), () {
+            if (mounted) {
+              showDrillSuggestionDialog(context, 'hiragana', sessions);
+            }
+          });
         }
       });
     }

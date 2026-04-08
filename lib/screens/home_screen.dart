@@ -9,6 +9,7 @@ import 'katakana_quiz_screen.dart';
 import 'math_screen.dart';
 import 'pokemon_screen.dart' show PokemonPlayMode, PokemonScreen, PokedexDialog;
 import '../services/analytics_service.dart';
+import '../services/daily_stats_service.dart';
 import '../services/storage_service.dart';
 import '../services/pokemon_repository.dart';
 
@@ -123,6 +124,40 @@ class _LeftPanelState extends State<_LeftPanel> {
               child: Text('🧒', style: TextStyle(fontSize: 80)),
             ),
           ),
+        const SizedBox(height: 20),
+        // 今日捕まえたポケモン数バッジ
+        ValueListenableBuilder<int>(
+          valueListenable: DailyStatsService.todayCaughtNotifier,
+          builder: (context, count, _) {
+            return Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('⚡', style: TextStyle(fontSize: 15)),
+                  const SizedBox(width: 6),
+                  Text(
+                    count == 0
+                        ? 'きょうはまだ\nゲットしてないよ'
+                        : 'きょう $count ひき\nゲット！',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ],
     );
   }

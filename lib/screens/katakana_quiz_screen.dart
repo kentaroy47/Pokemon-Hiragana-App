@@ -5,7 +5,9 @@ import '../data/pokemon_data.dart';
 import '../services/pokemon_repository.dart';
 import '../services/storage_service.dart';
 import '../services/analytics_service.dart';
+import '../services/daily_stats_service.dart';
 import '../services/sound_service.dart';
+import '../widgets/drill_suggestion_dialog.dart';
 import '../widgets/pokemon_widgets.dart';
 import 'pokemon_screen.dart' show PokedexDialog;
 
@@ -160,12 +162,22 @@ class _KatakanaQuizScreenState extends State<KatakanaQuizScreen> {
         isShiny: shiny,
         source: 'katakana_quiz',
       );
+      DailyStatsService.incrementCaught();
     }
+    final sessions =
+        DailyStatsService.incrementDrillSessions('katakana_quiz');
     setState(() {
       _rewardPokemon = reward;
       _rewardIsShiny = shiny;
       _showRoundResult = true;
     });
+    if (sessions > 0 && sessions % 5 == 0) {
+      Future.delayed(const Duration(milliseconds: 800), () {
+        if (mounted) {
+          showDrillSuggestionDialog(context, 'katakana_quiz', sessions);
+        }
+      });
+    }
   }
 
   void _nextRound() {
