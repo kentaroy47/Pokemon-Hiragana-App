@@ -22,18 +22,17 @@ class MathScreen extends StatefulWidget {
 }
 
 class _MathScreenState extends State<MathScreen> {
-  static const _questionsPerRound = 5;
-  static const _passingScore = 3;
+  static const _correctsNeeded = 5;
 
   final _random = math.Random();
 
   MathLevel _level = MathLevel.addSimple;
-  int _questionIndex = 0;
   int _correctCount = 0;
+  int _totalAsked = 0;
 
-  late List<MathProblem> _problems;
+  late MathProblem _current;
   late List<int> _choices;
-  int? _selectedAnswer; // null = 未回答
+  int? _selectedAnswer;
 
   bool _showRoundResult = false;
   bool _levelExhausted = false;
@@ -47,9 +46,6 @@ class _MathScreenState extends State<MathScreen> {
 
   final List<PokemonEntry> _caughtPokemon = [];
   final Set<String> _shinyCaughtNames = {};
-
-  MathProblem get _current => _problems[_questionIndex];
-  bool get _passed => _correctCount >= _passingScore;
 
   @override
   void initState() {
@@ -70,7 +66,8 @@ class _MathScreenState extends State<MathScreen> {
   }
 
   void _startRound() {
-    _problems = MathData.generateSet(_level, _random);
+    _correctCount = 0;
+    _totalAsked = 0;
     // 報酬ポケモンをラウンド開始時に事前選択
     final pool = PokemonRepository.all;
     int idx;
@@ -80,11 +77,13 @@ class _MathScreenState extends State<MathScreen> {
     _prevPokemonIndex = idx;
     _pendingRewardPokemon = pool[idx];
     _pendingIsShiny = _random.nextDouble() < 0.2;
-    _loadQuestion(0);
+    _current = MathData.generate(_level, _random);
+    _choices = MathData.generateChoices(_current.answer, _random);
+    _selectedAnswer = null;
   }
 
-  void _loadQuestion(int index) {
-    _questionIndex = index;
+  void _loadNextQuestion() {
+    _current = MathData.generate(_level, _random);
     _choices = MathData.generateChoices(_current.answer, _random);
     _selectedAnswer = null;
   }
@@ -94,26 +93,26 @@ class _MathScreenState extends State<MathScreen> {
     final correct = choice == _current.answer;
     setState(() {
       _selectedAnswer = choice;
+      _totalAsked++;
       if (correct) _correctCount++;
     });
     if (correct) SoundService.playStrokeComplete();
 
     Future.delayed(const Duration(milliseconds: 700), () {
       if (!mounted) return;
-      if (_questionIndex + 1 < _questionsPerRound) {
-        setState(() => _loadQuestion(_questionIndex + 1));
-      } else {
+      if (_correctCount >= _correctsNeeded) {
         _endRound();
+      } else {
+        setState(() => _loadNextQuestion());
       }
     });
   }
 
   void _endRound() {
-    PokemonEntry? reward;
-    final shiny = _passed && _pendingIsShiny;
-    if (_passed && _pendingRewardPokemon != null) {
-      reward = _pendingRewardPokemon;
-      _caughtPokemon.add(reward!);
+    final reward = _pendingRewardPokemon;
+    final shiny = _pendingIsShiny;
+    if (reward != null) {
+      _caughtPokemon.add(reward);
       StorageService.saveCaughtNames(
           _caughtPokemon.map((p) => p.katakana).toList());
       if (shiny) {
@@ -128,7 +127,7 @@ class _MathScreenState extends State<MathScreen> {
     AnalyticsService.logMathRoundComplete(
       level: _level.name,
       score: _correctCount,
-      passed: _passed,
+      passed: true,
       isShiny: shiny,
       roundsCompleted: rounds,
     );
@@ -189,9 +188,11 @@ class _MathScreenState extends State<MathScreen> {
       _showRoundResult = false;
       _rewardPokemon = null;
       _levelExhausted = false;
+      _totalAsked = 0;
       // _pendingRewardPokemon and _pendingIsShiny are kept unchanged
-      _problems = MathData.generateSet(newLevel, _random);
-      _loadQuestion(0);
+      _current = MathData.generate(newLevel, _random);
+      _choices = MathData.generateChoices(_current.answer, _random);
+      _selectedAnswer = null;
     });
   }
 
@@ -207,7 +208,6 @@ class _MathScreenState extends State<MathScreen> {
             width: 260,
             child: _LeftPanel(
               level: _level,
-              questionIndex: _questionIndex,
               correctCount: _correctCount,
               showResult: _showRoundResult,
               caughtCount: _caughtPokemon.length,
@@ -234,20 +234,19 @@ class _MathScreenState extends State<MathScreen> {
                               problem: _current,
                               choices: _choices,
                               selectedAnswer: _selectedAnswer,
-                              questionIndex: _questionIndex,
+                              correctCount: _correctCount,
+                              totalAsked: _totalAsked,
                               onAnswerTap: _onAnswerTap,
                             ),
                 ),
                 if (_showRoundResult)
                   _RoundResultOverlay(
-                    correctCount: _correctCount,
-                    total: _questionsPerRound,
-                    passed: _passed,
+                    totalAsked: _totalAsked,
                     rewardPokemon: _rewardPokemon,
                     isShiny: _rewardIsShiny,
                     onNext: _nextRound,
                   ),
-                if (_showRoundResult && _passed && _rewardPokemon != null)
+                if (_showRoundResult && _rewardPokemon != null)
                   Positioned.fill(
                     child: ConfettiOverlay(
                         baseColor: _rewardPokemon!.color),
@@ -265,7 +264,6 @@ class _MathScreenState extends State<MathScreen> {
 
 class _LeftPanel extends StatelessWidget {
   final MathLevel level;
-  final int questionIndex;
   final int correctCount;
   final bool showResult;
   final int caughtCount;
@@ -278,7 +276,6 @@ class _LeftPanel extends StatelessWidget {
 
   const _LeftPanel({
     required this.level,
-    required this.questionIndex,
     required this.correctCount,
     required this.showResult,
     required this.caughtCount,
@@ -391,10 +388,10 @@ class _LeftPanel extends StatelessWidget {
           }),
           const SizedBox(height: 8),
 
-          // 問題進捗（5つの丸）
+          // 正解進捗（5つの星）
           Center(
             child: Text(
-              'もんだい',
+              'せいかい',
               style: TextStyle(
                   fontSize: 11,
                   color: AppTheme.textGray,
@@ -405,49 +402,13 @@ class _LeftPanel extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(5, (i) {
-              final done = i < (showResult ? 5 : questionIndex);
-              final current = !showResult && i == questionIndex;
-              return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: done
-                      ? AppTheme.greenStroke
-                      : current
-                          ? _levelColor(level).withValues(alpha: 0.2)
-                          : const Color(0xFFEEEEEE),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: current
-                        ? _levelColor(level)
-                        : Colors.transparent,
-                    width: 2,
-                  ),
-                ),
-                child: done
-                    ? const Icon(Icons.check,
-                        size: 18, color: Colors.white)
-                    : current
-                        ? Center(
-                            child: Text(
-                              '${i + 1}',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: _levelColor(level),
-                              ),
-                            ),
-                          )
-                        : Center(
-                            child: Text(
-                              '${i + 1}',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: AppTheme.textGray,
-                              ),
-                            ),
-                          ),
+              final filled = showResult || i < correctCount;
+              return Icon(
+                filled ? Icons.star_rounded : Icons.star_outline_rounded,
+                color: filled
+                    ? const Color(0xFFF5C518)
+                    : const Color(0xFFCCCCCC),
+                size: 34,
               );
             }),
           ),
@@ -633,7 +594,8 @@ class _QuestionPanel extends StatelessWidget {
   final MathProblem problem;
   final List<int> choices;
   final int? selectedAnswer;
-  final int questionIndex;
+  final int correctCount;
+  final int totalAsked;
   final ValueChanged<int> onAnswerTap;
 
   const _QuestionPanel({
@@ -641,7 +603,8 @@ class _QuestionPanel extends StatelessWidget {
     required this.problem,
     required this.choices,
     required this.selectedAnswer,
-    required this.questionIndex,
+    required this.correctCount,
+    required this.totalAsked,
     required this.onAnswerTap,
   });
 
@@ -664,9 +627,9 @@ class _QuestionPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // 問題番号
+        // 正解数
         Text(
-          'もんだい ${questionIndex + 1} / 5',
+          'せいかい $correctCount / 5　（もんだい $totalAsked もん め）',
           style: const TextStyle(
             fontSize: 16,
             color: AppTheme.textGray,
