@@ -88,6 +88,7 @@ class _ClockScreenState extends State<ClockScreen> {
   PokemonEntry? _rewardPokemon;
   bool _rewardIsShiny = false;
   int _prevPokemonIndex = -1;
+  bool _levelExhausted = false;
 
   PokemonEntry? _pendingRewardPokemon;
   bool _pendingIsShiny = false;
@@ -105,7 +106,17 @@ class _ClockScreenState extends State<ClockScreen> {
     }
     _shinyCaughtNames.addAll(StorageService.loadShinyCaughtNames());
     _startRound();
+    if (_isExhausted(_level)) {
+      _levelExhausted = true;
+      _pendingRewardPokemon = null;
+    }
     AnalyticsService.logScreenView('clock');
+  }
+
+  bool _isExhausted(ClockLevel level) {
+    if (!StorageService.loadDailyLimitEnabled()) return false;
+    final limit = StorageService.loadDailyLimitCount();
+    return StorageService.loadDailyPlays('clock_${level.name}') >= limit;
   }
 
   void _startRound() {
@@ -175,6 +186,7 @@ class _ClockScreenState extends State<ClockScreen> {
       }
       SoundService.playCatch();
     }
+    StorageService.incrementDailyPlays('clock_${_level.name}');
     final rounds = StorageService.loadClockRoundsCompleted() + 1;
     StorageService.saveClockRoundsCompleted(rounds);
     AnalyticsService.logClockRoundComplete(
@@ -208,6 +220,14 @@ class _ClockScreenState extends State<ClockScreen> {
   }
 
   void _nextRound() {
+    if (_isExhausted(_level)) {
+      setState(() {
+        _showRoundResult = false;
+        _levelExhausted = true;
+        _pendingRewardPokemon = null;
+      });
+      return;
+    }
     setState(() {
       _correctCount = 0;
       _showRoundResult = false;
@@ -220,14 +240,17 @@ class _ClockScreenState extends State<ClockScreen> {
   }
 
   void _selectLevel(ClockLevel newLevel) {
+    if (_isExhausted(newLevel)) return;
     setState(() {
       _level = newLevel;
+      _totalAsked = 0;
       _correctCount = 0;
       _showRoundResult = false;
       _rewardPokemon = null;
-      _pendingRewardPokemon = null;
-      _pendingIsShiny = false;
-      _startRound();
+      _levelExhausted = false;
+      _current = _generateQuestion(newLevel);
+      _selectedAnswer = null;
+      // _pendingRewardPokemon and _pendingIsShiny are kept unchanged
     });
   }
 
@@ -261,12 +284,14 @@ class _ClockScreenState extends State<ClockScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 16, 24, 16),
                   child: _showRoundResult
                       ? const SizedBox.shrink()
-                      : _QuestionPanel(
-                          question: _current,
-                          totalAsked: _totalAsked,
-                          selectedAnswer: _selectedAnswer,
-                          onAnswerTap: _onAnswerTap,
-                        ),
+                      : _levelExhausted
+                          ? _ExhaustedPanel(levelLabel: _level.label)
+                          : _QuestionPanel(
+                              question: _current,
+                              totalAsked: _totalAsked,
+                              selectedAnswer: _selectedAnswer,
+                              onAnswerTap: _onAnswerTap,
+                            ),
                 ),
                 if (_showRoundResult)
                   _RoundResultOverlay(
@@ -351,58 +376,87 @@ class _LeftPanel extends StatelessWidget {
                 const SizedBox(height: 8),
 
                 // レベル選択
-                ...ClockLevel.values.map((l) {
-                  final selected = l == level;
-                  const color = Color(0xFF48BEFF);
-                  return GestureDetector(
-                    onTap: selected ? null : () => onLevelSelect(l),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      margin: const EdgeInsets.symmetric(vertical: 2),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? color
-                            : color.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: selected
-                              ? color
-                              : color.withValues(alpha: 0.3),
-                          width: selected ? 2 : 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Text(
-                            'Lv.${l.number}',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: selected ? Colors.white : color,
+                Builder(builder: (context) {
+                  final limitEnabled = StorageService.loadDailyLimitEnabled();
+                  final limitCount = limitEnabled ? StorageService.loadDailyLimitCount() : 0;
+                  return Column(
+                    children: ClockLevel.values.map((l) {
+                      final selected = l == level;
+                      const color = Color(0xFF48BEFF);
+                      final plays = limitEnabled ? StorageService.loadDailyPlays('clock_${l.name}') : 0;
+                      final exhausted = limitEnabled && plays >= limitCount;
+                      final remaining = limitEnabled ? (limitCount - plays).clamp(0, limitCount) : -1;
+                      return GestureDetector(
+                        onTap: exhausted || selected ? null : () => onLevelSelect(l),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          margin: const EdgeInsets.symmetric(vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: exhausted
+                                ? const Color(0xFFF0F0F0)
+                                : selected
+                                    ? color
+                                    : color.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: exhausted
+                                  ? const Color(0xFFCCCCCC)
+                                  : selected
+                                      ? color
+                                      : color.withValues(alpha: 0.3),
+                              width: selected ? 2 : 1,
                             ),
                           ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              l.label,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: selected
-                                    ? Colors.white
-                                    : AppTheme.darkText,
-                                height: 1.3,
+                          child: Row(
+                            children: [
+                              Text(
+                                'Lv.${l.number}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: exhausted
+                                      ? AppTheme.textGray
+                                      : selected ? Colors.white : color,
+                                ),
                               ),
-                            ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  l.label,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: exhausted
+                                        ? AppTheme.textGray
+                                        : selected
+                                            ? Colors.white
+                                            : AppTheme.darkText,
+                                    height: 1.3,
+                                  ),
+                                ),
+                              ),
+                              if (exhausted)
+                                const Icon(Icons.lock_rounded,
+                                    color: AppTheme.textGray, size: 13)
+                              else if (selected)
+                                const Icon(Icons.play_arrow_rounded,
+                                    color: Colors.white, size: 14)
+                              else if (remaining >= 0)
+                                Text(
+                                  'あと$remaining',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: color,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                            ],
                           ),
-                          if (selected)
-                            const Icon(Icons.play_arrow_rounded,
-                                color: Colors.white, size: 14),
-                        ],
-                      ),
-                    ),
+                        ),
+                      );
+                    }).toList(),
                   );
                 }),
                 const SizedBox(height: 8),
@@ -551,6 +605,54 @@ class _LeftPanel extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ─── 今日おしまいパネル ──────────────────────────────────────────────────────────
+
+class _ExhaustedPanel extends StatelessWidget {
+  final String levelLabel;
+
+  const _ExhaustedPanel({required this.levelLabel});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('🌙', style: TextStyle(fontSize: 60)),
+          const SizedBox(height: 16),
+          Text(
+            '「$levelLabel」は\nきょうは おしまい！',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.darkText,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'ほかのレベルをえらんでね',
+            style: TextStyle(fontSize: 14, color: AppTheme.textGray),
+          ),
+          const SizedBox(height: 24),
+          OutlinedButton.icon(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.home_outlined),
+            label: const Text('もどる'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppTheme.darkText,
+              side: const BorderSide(color: Color(0xFFCCCCCC)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
+            ),
+          ),
+        ],
       ),
     );
   }

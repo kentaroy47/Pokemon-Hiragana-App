@@ -63,6 +63,7 @@ class _KatakanaQuizScreenState extends State<KatakanaQuizScreen> {
   String? _selectedAnswer;
 
   bool _showRoundResult = false;
+  bool _exhausted = false;
   PokemonEntry? _rewardPokemon;
   bool _rewardIsShiny = false;
   int _prevPokemonIndex = -1;
@@ -83,7 +84,17 @@ class _KatakanaQuizScreenState extends State<KatakanaQuizScreen> {
     }
     _shinyCaughtNames.addAll(StorageService.loadShinyCaughtNames());
     _startRound();
+    if (_isExhausted()) {
+      _exhausted = true;
+      _pendingRewardPokemon = null;
+    }
     AnalyticsService.logScreenView('katakana_quiz');
+  }
+
+  bool _isExhausted() {
+    if (!StorageService.loadDailyLimitEnabled()) return false;
+    final limit = StorageService.loadDailyLimitCount();
+    return StorageService.loadDailyPlays('katakana_quiz') >= limit;
   }
 
   void _startRound() {
@@ -151,6 +162,7 @@ class _KatakanaQuizScreenState extends State<KatakanaQuizScreen> {
       }
       SoundService.playCatch();
     }
+    StorageService.incrementDailyPlays('katakana_quiz');
     AnalyticsService.logKatakanaRoundComplete(
       score: _correctCount,
       passed: true,
@@ -181,9 +193,18 @@ class _KatakanaQuizScreenState extends State<KatakanaQuizScreen> {
   }
 
   void _nextRound() {
+    if (_isExhausted()) {
+      setState(() {
+        _showRoundResult = false;
+        _exhausted = true;
+        _pendingRewardPokemon = null;
+      });
+      return;
+    }
     setState(() {
       _correctCount = 0;
       _showRoundResult = false;
+      _exhausted = false;
       _rewardPokemon = null;
       _rewardIsShiny = false;
       _pendingRewardPokemon = null;
@@ -220,12 +241,15 @@ class _KatakanaQuizScreenState extends State<KatakanaQuizScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 16, 24, 16),
                   child: _showRoundResult
                       ? const SizedBox.shrink()
-                      : _QuestionPanel(
-                          question: _current,
-                          totalAsked: _totalAsked,
-                          selectedAnswer: _selectedAnswer,
-                          onAnswerTap: _onAnswerTap,
-                        ),
+                      : _exhausted
+                          ? _KatakanaExhaustedPanel(
+                              onBack: () => Navigator.pop(context))
+                          : _QuestionPanel(
+                              question: _current,
+                              totalAsked: _totalAsked,
+                              selectedAnswer: _selectedAnswer,
+                              onAnswerTap: _onAnswerTap,
+                            ),
                 ),
                 if (_showRoundResult)
                   _RoundResultOverlay(
@@ -241,6 +265,52 @@ class _KatakanaQuizScreenState extends State<KatakanaQuizScreen> {
                     child: ConfettiOverlay(baseColor: _rewardPokemon!.color),
                   ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── 今日おしまいパネル ──────────────────────────────────────────────────────────
+
+class _KatakanaExhaustedPanel extends StatelessWidget {
+  final VoidCallback onBack;
+
+  const _KatakanaExhaustedPanel({required this.onBack});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('🌙', style: TextStyle(fontSize: 60)),
+          const SizedBox(height: 16),
+          const Text(
+            'きょうは おしまい！',
+            style: TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.darkText,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'また あした ね！',
+            style: TextStyle(fontSize: 16, color: AppTheme.textGray),
+          ),
+          const SizedBox(height: 24),
+          OutlinedButton.icon(
+            onPressed: onBack,
+            icon: const Icon(Icons.home_outlined),
+            label: const Text('もどる'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppTheme.darkText,
+              side: const BorderSide(color: Color(0xFFCCCCCC)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
             ),
           ),
         ],

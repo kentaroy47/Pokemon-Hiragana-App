@@ -6,6 +6,7 @@ import '../data/pokemon_data.dart';
 import '../widgets/pokemon_widgets.dart';
 import 'clock_screen.dart';
 import 'katakana_quiz_screen.dart';
+import 'settings_screen.dart';
 import 'math_screen.dart';
 import 'pokemon_screen.dart' show PokemonPlayMode, PokemonScreen, PokedexDialog;
 import '../services/analytics_service.dart';
@@ -352,6 +353,24 @@ class _RightPanel extends StatelessWidget {
                 ),
               ),
               const Spacer(),
+              GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                ),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.textGray.withValues(alpha: 0.08),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                        color: AppTheme.textGray.withValues(alpha: 0.2)),
+                  ),
+                  child: const Icon(Icons.settings_rounded,
+                      size: 16, color: AppTheme.textGray),
+                ),
+              ),
+              const SizedBox(width: 8),
               _PalettePicker(currentId: palette.id),
             ],
           ),

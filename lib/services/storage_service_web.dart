@@ -13,6 +13,8 @@ const _shinyKey = 'pokemon_caught_shiny';
 const _paletteKey = 'app_palette';
 const _mathRoundsKey = 'math_rounds_completed';
 const _clockRoundsKey = 'clock_rounds_completed';
+const _dailyLimitEnabledKey = 'daily_limit_enabled';
+const _dailyLimitCountKey = 'daily_limit_count';
 const _todayDateKey = 'today_date_jst';
 const _todayCaughtKey = 'today_caught_count';
 const _drillSessionPrefix = 'today_sessions_';
@@ -176,6 +178,63 @@ class StorageService {
   static void saveClockRoundsCompleted(int count) {
     try {
       _localStorage.setItem(_clockRoundsKey, '$count');
+    } catch (_) {}
+  }
+
+  // ─── 日次回数制限 ──────────────────────────────────────────────────────────
+
+  static String _dailyKey(String mode) {
+    final now = DateTime.now();
+    final date =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    return 'dp_${mode}_$date';
+  }
+
+  static bool loadDailyLimitEnabled() {
+    try {
+      final raw = _localStorage.getItem(_dailyLimitEnabledKey)?.toDart ?? '';
+      return raw == 'true';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static void saveDailyLimitEnabled(bool value) {
+    try {
+      _localStorage.setItem(_dailyLimitEnabledKey, value ? 'true' : 'false');
+    } catch (_) {}
+  }
+
+  static int loadDailyLimitCount() {
+    try {
+      final raw = _localStorage.getItem(_dailyLimitCountKey)?.toDart ?? '';
+      return int.tryParse(raw) ?? 3;
+    } catch (_) {
+      return 3;
+    }
+  }
+
+  static void saveDailyLimitCount(int count) {
+    try {
+      _localStorage.setItem(_dailyLimitCountKey, '$count');
+    } catch (_) {}
+  }
+
+  /// 今日の指定モードのプレイ回数を取得
+  static int loadDailyPlays(String mode) {
+    try {
+      final raw = _localStorage.getItem(_dailyKey(mode))?.toDart ?? '';
+      return int.tryParse(raw) ?? 0;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  /// 今日の指定モードのプレイ回数を1増やす
+  static void incrementDailyPlays(String mode) {
+    try {
+      final current = loadDailyPlays(mode);
+      _localStorage.setItem(_dailyKey(mode), '${current + 1}');
     } catch (_) {}
   }
 }
