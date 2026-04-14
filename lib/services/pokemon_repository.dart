@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import '../data/pokemon_data.dart';
+import '../data/pokemon_fallback_data.dart';
 
 /// assets/data/pokemon_all.json から全ポケモンを読み込むリポジトリ。
 /// main() で init() を呼ぶことで起動時にロードし、以降は同期アクセス可能。

@@ -5,3 +5,4 @@ linux/
 macos/
 build/
 windows/
+lib/data/pokemon_fallback_data.dart
