@@ -861,17 +861,13 @@ class _ChoiceGrid extends StatelessWidget {
 // ─── ラウンド結果オーバーレイ ──────────────────────────────────────────────────
 
 class _RoundResultOverlay extends StatefulWidget {
-  final int correctCount;
-  final int total;
-  final bool passed;
+  final int totalAsked;
   final PokemonEntry? rewardPokemon;
   final bool isShiny;
   final VoidCallback onNext;
 
   const _RoundResultOverlay({
-    required this.correctCount,
-    required this.total,
-    required this.passed,
+    required this.totalAsked,
     required this.rewardPokemon,
     required this.isShiny,
     required this.onNext,
@@ -935,34 +931,29 @@ class _RoundResultOverlayState extends State<_RoundResultOverlay>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // スコア表示
+                    // 5つの金星
                     Row(
                       mainAxisSize: MainAxisSize.min,
-                      children: List.generate(widget.total, (i) {
-                        final filled = i < widget.correctCount;
-                        return Icon(
-                          filled
-                              ? Icons.star_rounded
-                              : Icons.star_outline_rounded,
-                          color: filled
-                              ? const Color(0xFFF5C518)
-                              : const Color(0xFFCCCCCC),
+                      children: List.generate(5, (_) {
+                        return const Icon(
+                          Icons.star_rounded,
+                          color: Color(0xFFF5C518),
                           size: 40,
                         );
                       }),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 4),
                     Text(
-                      '${widget.correctCount} / ${widget.total} もんだい せいかい！',
+                      '${widget.totalAsked} もんで クリア！',
                       style: const TextStyle(
-                        fontSize: 22,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: AppTheme.darkText,
                       ),
                     ),
                     const SizedBox(height: 20),
 
-                    if (widget.passed && pokemon != null) ...[
+                    if (pokemon != null) ...[
                       // ポケモンゲット演出
                       SizedBox(
                         width: 130,
@@ -1024,36 +1015,19 @@ class _RoundResultOverlayState extends State<_RoundResultOverlay>
                           letterSpacing: 4,
                         ),
                       ),
-                    ] else if (!widget.passed) ...[
-                      // 不合格
-                      const Text('😢',
-                          style: TextStyle(fontSize: 56)),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'もう すこし！\nもう いちど やってみよう',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.darkText,
-                          height: 1.5,
-                        ),
-                      ),
                     ],
 
                     const SizedBox(height: 28),
 
                     ElevatedButton.icon(
                       onPressed: widget.onNext,
-                      icon: Text(
-                        widget.passed ? 'つぎへ' : 'もういちど',
-                        style: const TextStyle(fontSize: 18),
+                      icon: const Text(
+                        'つぎへ',
+                        style: TextStyle(fontSize: 18),
                       ),
                       label: const Icon(Icons.arrow_forward, size: 20),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: widget.passed
-                            ? AppTheme.pinkAccent
-                            : AppTheme.blueAccent,
+                        backgroundColor: AppTheme.pinkAccent,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
                             horizontal: 32, vertical: 16),
