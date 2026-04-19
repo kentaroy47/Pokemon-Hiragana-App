@@ -384,9 +384,10 @@ class _LeftPanel extends StatelessWidget {
                 const SizedBox(height: 16),
 
                 if (!showResult && pendingRewardPokemon != null)
-                  DrillPokemonRewardPreview(
+                  _PokemonPreviewNoName(
                     pokemon: pendingRewardPokemon!,
                     isShiny: pendingIsShiny,
+                    accentColor: titleColor,
                   ),
                 const Spacer(flex: 1),
                 DrillCaughtBar(
@@ -400,6 +401,54 @@ class _LeftPanel extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+// ─── 名前なしポケモンプレビュー ───────────────────────────────────────────────────
+
+class _PokemonPreviewNoName extends StatelessWidget {
+  final PokemonEntry pokemon;
+  final bool isShiny;
+  final Color accentColor;
+
+  const _PokemonPreviewNoName({
+    required this.pokemon,
+    required this.isShiny,
+    required this.accentColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Center(
+          child: Text(
+            'ゲットのチャンス！',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: accentColor,
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Center(
+          child: PokemonImage(pokemon: pokemon, size: 100, isShiny: isShiny),
+        ),
+        if (isShiny)
+          const Center(
+            child: Text(
+              '✨ いろちがい！',
+              style: TextStyle(
+                fontSize: 11,
+                color: Color(0xFFFFD700),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        const SizedBox(height: 8),
+      ],
     );
   }
 }

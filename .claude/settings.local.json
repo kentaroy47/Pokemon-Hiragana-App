@@ -45,7 +45,10 @@
       "Bash(powershell.exe -Command \"cd 'g:\\\\マイドライブ\\\\010_Codes\\\\hiragana_app\\\\hiragana'; & 'C:\\\\Users\\\\ken\\\\Documents\\\\flutter\\\\bin\\\\flutter.bat' analyze --no-fatal-infos 2>&1 | Select-Object -Last 30\")",
       "Bash(powershell.exe -Command \"cd 'g:\\\\マイドライブ\\\\010_Codes\\\\hiragana_app\\\\hiragana'; & 'C:\\\\Users\\\\ken\\\\Documents\\\\flutter\\\\bin\\\\flutter.bat' analyze --no-fatal-infos 2>&1 | Select-Object -Last 15\")",
       "Bash(flutter build *)",
-      "Bash(find lib *)"
+      "Bash(find lib *)",
+      "Bash(git checkout *)",
+      "Bash(git add *)",
+      "Bash(git merge *)"
     ]
   }
 }
