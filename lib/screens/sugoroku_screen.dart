@@ -14,6 +14,7 @@ import 'drill_round_mixin.dart';
 
 enum _SquareType { start, quiz, lucky, goal }
 
+// 30マス・5列×6行スネーク型ボード
 const _squareTypes = <_SquareType>[
   _SquareType.start,  // 0
   _SquareType.quiz,   // 1
@@ -24,26 +25,36 @@ const _squareTypes = <_SquareType>[
   _SquareType.quiz,   // 6
   _SquareType.quiz,   // 7
   _SquareType.quiz,   // 8
-  _SquareType.lucky,  // 9  ★
-  _SquareType.quiz,   // 10
+  _SquareType.quiz,   // 9
+  _SquareType.lucky,  // 10 ★
   _SquareType.quiz,   // 11
   _SquareType.quiz,   // 12
   _SquareType.quiz,   // 13
   _SquareType.quiz,   // 14
-  _SquareType.lucky,  // 15 ★
-  _SquareType.quiz,   // 16
+  _SquareType.quiz,   // 15
+  _SquareType.lucky,  // 16 ★
   _SquareType.quiz,   // 17
   _SquareType.quiz,   // 18
-  _SquareType.goal,   // 19 🏆
+  _SquareType.quiz,   // 19
+  _SquareType.quiz,   // 20
+  _SquareType.lucky,  // 21 ★
+  _SquareType.quiz,   // 22
+  _SquareType.quiz,   // 23
+  _SquareType.quiz,   // 24
+  _SquareType.quiz,   // 25
+  _SquareType.lucky,  // 26 ★
+  _SquareType.quiz,   // 27
+  _SquareType.quiz,   // 28
+  _SquareType.goal,   // 29 🏆
 ];
 
-// 視覚(rowIdx=0:上, colIdx=0:左) → ポジション番号
+// 視覚(rowIdx=0:上, colIdx=0:左) → ポジション番号（5列×6行）
 int? _gridToPos(int rowIdx, int colIdx) {
-  final posGroup = 4 - rowIdx; // 上row=posGroup4, 下row=posGroup0
+  final posGroup = 5 - rowIdx; // 上row=posGroup5, 下row=posGroup0
   final isEvenGroup = posGroup % 2 == 0;
-  final posInGroup = isEvenGroup ? colIdx : (3 - colIdx);
-  final pos = posGroup * 4 + posInGroup;
-  return (pos >= 0 && pos < 20) ? pos : null;
+  final posInGroup = isEvenGroup ? colIdx : (4 - colIdx);
+  final pos = posGroup * 5 + posInGroup;
+  return (pos >= 0 && pos < 30) ? pos : null;
 }
 
 // ─── クイズデータ ─────────────────────────────────────────────────────────────
@@ -198,7 +209,7 @@ class _SugorokuScreenState extends State<SugorokuScreen> with DrillRoundMixin {
 
   void _movePlayer() {
     if (!mounted) return;
-    final newPos = math.min(_position + _diceValue!, 19);
+    final newPos = math.min(_position + _diceValue!, 29);
     final steps = newPos - _position;
     setState(() {
       _position = newPos;
@@ -206,7 +217,7 @@ class _SugorokuScreenState extends State<SugorokuScreen> with DrillRoundMixin {
       _selectedChoice = null;
       _diceValue = null;
     });
-    if (newPos >= 19) {
+    if (newPos >= 29) {
       _endRound();
       return;
     }
@@ -221,13 +232,13 @@ class _SugorokuScreenState extends State<SugorokuScreen> with DrillRoundMixin {
     setState(() => _showingLucky = true);
     Future.delayed(const Duration(milliseconds: 1200), () {
       if (!mounted) return;
-      final newPos = math.min(_position + 2, 19);
+      final newPos = math.min(_position + 2, 29);
       setState(() {
         _stepsWalked += newPos - _position;
         _position = newPos;
         _showingLucky = false;
       });
-      if (_position >= 19) {
+      if (_position >= 29) {
         _endRound();
       } else {
         _nextQuestion();
@@ -446,7 +457,7 @@ class _LeftPanel extends StatelessWidget {
                 const SizedBox(height: 4),
                 Center(
                   child: Text(
-                    'ゴールまで ${19 - position} マス',
+                    'ゴールまで ${29 - position} マス',
                     style: const TextStyle(
                       fontSize: 11,
                       color: AppTheme.textGray,
@@ -490,16 +501,16 @@ class _BoardView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(5, (rowIdx) {
+      children: List.generate(6, (rowIdx) {
         return Padding(
-          padding: EdgeInsets.only(bottom: rowIdx < 4 ? 5 : 0),
+          padding: EdgeInsets.only(bottom: rowIdx < 5 ? 4 : 0),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(4, (colIdx) {
+            children: List.generate(5, (colIdx) {
               final pos = _gridToPos(rowIdx, colIdx);
-              if (pos == null) return const SizedBox(width: 57, height: 57);
+              if (pos == null) return const SizedBox(width: 50, height: 50);
               return Padding(
-                padding: EdgeInsets.only(right: colIdx < 3 ? 5 : 0),
+                padding: EdgeInsets.only(right: colIdx < 4 ? 4 : 0),
                 child: _BoardCell(
                   pos: pos,
                   type: _squareTypes[pos],
@@ -556,8 +567,8 @@ class _BoardCell extends StatelessWidget {
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
-      width: 57,
-      height: 57,
+      width: 50,
+      height: 50,
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(10),
