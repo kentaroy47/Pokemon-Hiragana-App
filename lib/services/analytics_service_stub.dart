@@ -26,4 +26,17 @@ class AnalyticsService {
     required bool isShiny,
     required int roundsCompleted,
   }) {}
+  static void logMemoryRoundComplete({
+    required int score,
+    required bool isShiny,
+  }) {}
+  static void logSugorokuRoundComplete({
+    required int stepsWalked,
+    required bool isShiny,
+  }) {}
+  static void logPokemonReadingRoundComplete({
+    required String mode,
+    required int correctCount,
+    required bool isShiny,
+  }) {}
 }

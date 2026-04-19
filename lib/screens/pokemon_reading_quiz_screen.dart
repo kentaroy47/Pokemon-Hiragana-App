@@ -122,6 +122,11 @@ class _PokemonReadingQuizScreenState extends State<PokemonReadingQuizScreen>
     final reward = drillSaveRewardPokemon();
     final shiny = drillPendingIsShiny;
     StorageService.incrementDailyPlays(_modeKey);
+    AnalyticsService.logPokemonReadingRoundComplete(
+      mode: widget.mode == PokemonReadingMode.hiragana ? 'hiragana' : 'katakana',
+      correctCount: drillCorrectCount,
+      isShiny: shiny,
+    );
     if (reward != null) {
       AnalyticsService.logPokemonCaught(
         pokemonName: reward.katakana,

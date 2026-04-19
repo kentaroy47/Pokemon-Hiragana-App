@@ -72,4 +72,36 @@ class AnalyticsService {
       'rounds_completed': roundsCompleted,
     }.jsify());
   }
+
+  static void logMemoryRoundComplete({
+    required int score,
+    required bool isShiny,
+  }) {
+    _gtag('event'.toJS, 'memory_round_complete'.toJS, <String, Object>{
+      'score': score,
+      'is_shiny': isShiny,
+    }.jsify());
+  }
+
+  static void logSugorokuRoundComplete({
+    required int stepsWalked,
+    required bool isShiny,
+  }) {
+    _gtag('event'.toJS, 'sugoroku_round_complete'.toJS, <String, Object>{
+      'steps_walked': stepsWalked,
+      'is_shiny': isShiny,
+    }.jsify());
+  }
+
+  static void logPokemonReadingRoundComplete({
+    required String mode, // 'hiragana' or 'katakana'
+    required int correctCount,
+    required bool isShiny,
+  }) {
+    _gtag('event'.toJS, 'pokemon_reading_round_complete'.toJS, <String, Object>{
+      'mode': mode,
+      'correct_count': correctCount,
+      'is_shiny': isShiny,
+    }.jsify());
+  }
 }
