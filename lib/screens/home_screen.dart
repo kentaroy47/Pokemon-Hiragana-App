@@ -9,6 +9,7 @@ import 'katakana_quiz_screen.dart';
 import 'settings_screen.dart';
 import 'math_screen.dart';
 import 'pokemon_screen.dart' show PokemonPlayMode, PokemonScreen;
+import 'pokemon_reading_quiz_screen.dart';
 import '../widgets/pokedex_dialog.dart';
 import '../services/analytics_service.dart';
 import '../services/daily_stats_service.dart';
@@ -238,6 +239,22 @@ class _RightPanel extends StatelessWidget {
                           const PokemonScreen(mode: PokemonPlayMode.katakanaHard),
                     ),
                   );
+                case _KokugoMode.pokemonHiragana:
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const PokemonReadingQuizScreen(
+                          mode: PokemonReadingMode.hiragana),
+                    ),
+                  );
+                case _KokugoMode.pokemonKatakana:
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const PokemonReadingQuizScreen(
+                          mode: PokemonReadingMode.katakana),
+                    ),
+                  );
               }
             },
           ),
@@ -428,7 +445,14 @@ class _MenuButton extends StatelessWidget {
 
 // ─── こくごモード ──────────────────────────────────────────────────────────────
 
-enum _KokugoMode { hiragana, hiraganaHard, katakana, katakanaHard }
+enum _KokugoMode {
+  hiragana,
+  hiraganaHard,
+  katakana,
+  katakanaHard,
+  pokemonHiragana,
+  pokemonKatakana,
+}
 
 class _KokugoModeDialog extends StatelessWidget {
   const _KokugoModeDialog();
@@ -475,6 +499,24 @@ class _KokugoModeDialog extends StatelessWidget {
             description: 'ポケモンのなまえをなぞる',
             color: const Color(0xFFE65100),
             onTap: () => Navigator.pop(context, _KokugoMode.katakanaHard),
+          ),
+          const SizedBox(height: 8),
+          const Divider(height: 1),
+          const SizedBox(height: 8),
+          _ModeOption(
+            emoji: '🐾',
+            label: 'ポケモンよみかた（ひらがな）',
+            description: 'ポケモンのなまえをひらがなでえらぶ',
+            color: AppTheme.pinkAccent,
+            onTap: () => Navigator.pop(context, _KokugoMode.pokemonHiragana),
+          ),
+          const SizedBox(height: 8),
+          _ModeOption(
+            emoji: '🐾',
+            label: 'ポケモンよみかた（カタカナ）',
+            description: 'ポケモンのなまえをカタカナでえらぶ',
+            color: AppTheme.blueAccent,
+            onTap: () => Navigator.pop(context, _KokugoMode.pokemonKatakana),
           ),
         ],
       ),
