@@ -6,6 +6,8 @@ import '../data/pokemon_data.dart';
 import '../widgets/pokemon_widgets.dart';
 import 'clock_screen.dart';
 import 'katakana_quiz_screen.dart';
+import 'memory_screen.dart';
+import 'sugoroku_screen.dart';
 import 'settings_screen.dart';
 import 'math_screen.dart';
 import 'pokemon_screen.dart' show PokemonPlayMode, PokemonScreen;
@@ -300,6 +302,36 @@ class _RightPanel extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const ClockScreen()),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+
+          // カードあわせ button
+          _MenuButton(
+            emoji: '🃏',
+            label: 'カードあわせ',
+            color: const Color(0xFF6C5CE7),
+            onTap: () {
+              AnalyticsService.logScreenView('memory');
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MemoryScreen()),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+
+          // スゴロク button
+          _MenuButton(
+            emoji: '🎲',
+            label: 'スゴロク',
+            color: const Color(0xFF00B894),
+            onTap: () {
+              AnalyticsService.logScreenView('sugoroku');
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SugorokuScreen()),
               );
             },
           ),
@@ -671,6 +703,8 @@ class _TodayStatsRow extends StatelessWidget {
       ('math', '🔢', 'さんすう'),
       ('katakana_quiz', '🌼', 'カタカナ'),
       ('clock', '🕐', 'とけい'),
+      ('memory', '🃏', 'カード'),
+      ('sugoroku', '🎲', 'スゴロク'),
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
