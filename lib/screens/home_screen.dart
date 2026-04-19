@@ -305,7 +305,7 @@ class _RightPanel extends StatelessWidget {
               );
             },
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
           // カードあわせ button
           _MenuButton(
@@ -320,7 +320,7 @@ class _RightPanel extends StatelessWidget {
               );
             },
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
           // スゴロク button
           _MenuButton(
@@ -336,7 +336,7 @@ class _RightPanel extends StatelessWidget {
             },
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           const _TodayStatsRow(),
           const Spacer(),
 
