@@ -15,14 +15,6 @@ import 'drill_round_mixin.dart';
 
 enum PokemonReadingMode { hiragana, katakana }
 
-// ─── 問題データ ───────────────────────────────────────────────────────────────
-
-class _Question {
-  final PokemonEntry correct;
-  final List<PokemonEntry> choices; // 4 choices including correct
-  const _Question({required this.correct, required this.choices});
-}
-
 // ─── メイン画面 ───────────────────────────────────────────────────────────────
 
 class PokemonReadingQuizScreen extends StatefulWidget {
@@ -36,23 +28,32 @@ class PokemonReadingQuizScreen extends StatefulWidget {
 
 class _PokemonReadingQuizScreenState extends State<PokemonReadingQuizScreen>
     with DrillRoundMixin {
-  static const _passingScore = 5;
-
-  late _Question _current;
+  late PokemonEntry _currentPokemon;
+  int _charIdx = 0;
   String? _selectedAnswer;
+  late List<String> _choices;
+  late Set<String> _charPool;
   bool _exhausted = false;
 
   String get _modeKey => widget.mode == PokemonReadingMode.hiragana
       ? 'pokemon_hira_quiz'
       : 'pokemon_kata_quiz';
 
-  String _nameOf(PokemonEntry p) =>
-      widget.mode == PokemonReadingMode.hiragana ? p.hiragana : p.katakana;
+  List<String> get _nameChars => widget.mode == PokemonReadingMode.hiragana
+      ? _currentPokemon.hiragana.split('')
+      : _currentPokemon.katakana.split('');
+
+  String get _currentChar => _nameChars[_charIdx];
 
   @override
   void initState() {
     super.initState();
     drillInitPokemonState();
+    _charPool = PokemonRepository.all
+        .expand((p) => widget.mode == PokemonReadingMode.hiragana
+            ? p.hiragana.split('')
+            : p.katakana.split(''))
+        .toSet();
     _startRound();
     if (drillIsExhausted(_modeKey)) {
       _exhausted = true;
@@ -63,42 +64,56 @@ class _PokemonReadingQuizScreenState extends State<PokemonReadingQuizScreen>
 
   void _startRound() {
     drillCorrectCount = 0;
-    _current = _generateQuestion();
-    _selectedAnswer = null;
-    drillPickPendingPokemon();
+    _pickPokemon();
+    // 今回のポケモン自体が報酬
+    drillPendingRewardPokemon = _currentPokemon;
+    drillPendingIsShiny = drillRandom.nextDouble() < 0.2;
   }
 
-  _Question _generateQuestion() {
+  void _pickPokemon() {
     final pool = PokemonRepository.all;
-    final correctIdx = drillRandom.nextInt(pool.length);
-    final correct = pool[correctIdx];
-    final wrongs = (List<PokemonEntry>.from(pool)
-          ..removeWhere((p) => p.katakana == correct.katakana)
+    PokemonEntry pick;
+    int attempts = 0;
+    do {
+      pick = pool[drillRandom.nextInt(pool.length)];
+      attempts++;
+    } while (attempts < 20 &&
+        pool.length > 1 &&
+        pick.katakana == (drillPendingRewardPokemon?.katakana ?? ''));
+    _currentPokemon = pick;
+    _charIdx = 0;
+    _selectedAnswer = null;
+    _choices = _generateChoices(_currentChar);
+  }
+
+  List<String> _generateChoices(String correct) {
+    final wrongs = (List<String>.from(_charPool)
+          ..remove(correct)
           ..shuffle(drillRandom))
         .take(3)
         .toList();
-    final choices = [correct, ...wrongs]..shuffle(drillRandom);
-    return _Question(correct: correct, choices: choices);
+    return [correct, ...wrongs]..shuffle(drillRandom);
   }
 
-  void _onAnswerTap(String name) {
+  void _onAnswerTap(String choice) {
     if (_selectedAnswer != null) return;
-    final correct = name == _nameOf(_current.correct);
+    final correct = choice == _currentChar;
     setState(() {
-      _selectedAnswer = name;
+      _selectedAnswer = choice;
       if (correct) drillCorrectCount++;
     });
     if (correct) SoundService.playStrokeComplete();
 
-    Future.delayed(const Duration(milliseconds: 800), () {
+    Future.delayed(const Duration(milliseconds: 700), () {
       if (!mounted) return;
-      if (drillCorrectCount >= _passingScore) {
-        _endRound();
-      } else {
+      if (_charIdx < _nameChars.length - 1) {
         setState(() {
-          _current = _generateQuestion();
+          _charIdx++;
           _selectedAnswer = null;
+          _choices = _generateChoices(_currentChar);
         });
+      } else {
+        _endRound();
       }
     });
   }
@@ -138,13 +153,11 @@ class _PokemonReadingQuizScreenState extends State<PokemonReadingQuizScreen>
       return;
     }
     setState(() {
-      drillCorrectCount = 0;
       drillShowRoundResult = false;
       _exhausted = false;
       drillRewardPokemon = null;
       drillRewardIsShiny = false;
-      drillPendingRewardPokemon = null;
-      drillPendingIsShiny = false;
+      drillCorrectCount = 0;
       _startRound();
     });
   }
@@ -165,7 +178,8 @@ class _PokemonReadingQuizScreenState extends State<PokemonReadingQuizScreen>
             child: _LeftPanel(
               title: title,
               titleColor: titleColor,
-              correctCount: drillCorrectCount,
+              charIdx: _charIdx,
+              totalChars: _nameChars.length,
               showResult: drillShowRoundResult,
               caughtCount: drillCaughtPokemon.length,
               caughtPokemon: drillCaughtPokemon,
@@ -186,17 +200,19 @@ class _PokemonReadingQuizScreenState extends State<PokemonReadingQuizScreen>
                           ? _ExhaustedPanel(
                               onBack: () => Navigator.pop(context))
                           : _QuestionPanel(
-                              question: _current,
+                              pokemon: _currentPokemon,
+                              nameChars: _nameChars,
+                              charIdx: _charIdx,
+                              choices: _choices,
                               selectedAnswer: _selectedAnswer,
                               onAnswerTap: _onAnswerTap,
-                              nameOf: _nameOf,
+                              isHira: isHira,
                             ),
                 ),
                 if (drillShowRoundResult)
                   DrillRoundResultOverlay(
-                    scoreLabel:
-                        '$drillCorrectCount / $_passingScore もんだい せいかい！',
-                    starsTotal: _passingScore,
+                    scoreLabel: 'よめた！',
+                    starsTotal: _nameChars.length,
                     starsFilled: drillCorrectCount,
                     passed: true,
                     rewardPokemon: drillRewardPokemon,
@@ -266,7 +282,8 @@ class _ExhaustedPanel extends StatelessWidget {
 class _LeftPanel extends StatelessWidget {
   final String title;
   final Color titleColor;
-  final int correctCount;
+  final int charIdx;
+  final int totalChars;
   final bool showResult;
   final int caughtCount;
   final List<PokemonEntry> caughtPokemon;
@@ -278,7 +295,8 @@ class _LeftPanel extends StatelessWidget {
   const _LeftPanel({
     required this.title,
     required this.titleColor,
-    required this.correctCount,
+    required this.charIdx,
+    required this.totalChars,
     required this.showResult,
     required this.caughtCount,
     required this.caughtPokemon,
@@ -328,36 +346,43 @@ class _LeftPanel extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(5, (i) {
-                    final filled = i < correctCount;
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      child: Icon(
-                        filled
-                            ? Icons.star_rounded
-                            : Icons.star_outline_rounded,
-                        size: 36,
-                        color: filled
-                            ? const Color(0xFFFF9F43)
-                            : const Color(0xFFDDDDDD),
-                      ),
-                    );
-                  }),
-                ),
+                const SizedBox(height: 16),
+
+                // 文字進捗ドット
                 Center(
-                  child: Text(
-                    '$correctCount / 5 せいかい',
-                    style: const TextStyle(
-                      fontSize: 12,
+                  child: const Text(
+                    'もじのすすみかた',
+                    style: TextStyle(
+                      fontSize: 11,
                       fontWeight: FontWeight.bold,
                       color: AppTheme.textGray,
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 6),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: List.generate(totalChars, (i) {
+                    final done = i < charIdx;
+                    final current = i == charIdx;
+                    return Container(
+                      width: 14,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: done
+                            ? titleColor
+                            : current
+                                ? titleColor.withValues(alpha: 0.4)
+                                : const Color(0xFFDDDDDD),
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 16),
+
                 if (!showResult && pendingRewardPokemon != null)
                   DrillPokemonRewardPreview(
                     pokemon: pendingRewardPokemon!,
@@ -382,27 +407,35 @@ class _LeftPanel extends StatelessWidget {
 // ─── 問題パネル ───────────────────────────────────────────────────────────────
 
 class _QuestionPanel extends StatelessWidget {
-  final _Question question;
+  final PokemonEntry pokemon;
+  final List<String> nameChars;
+  final int charIdx;
+  final List<String> choices;
   final String? selectedAnswer;
   final ValueChanged<String> onAnswerTap;
-  final String Function(PokemonEntry) nameOf;
+  final bool isHira;
 
   const _QuestionPanel({
-    required this.question,
+    required this.pokemon,
+    required this.nameChars,
+    required this.charIdx,
+    required this.choices,
     required this.selectedAnswer,
     required this.onAnswerTap,
-    required this.nameOf,
+    required this.isHira,
   });
 
   @override
   Widget build(BuildContext context) {
-    final correctName = nameOf(question.correct);
+    final accentColor = isHira ? AppTheme.pinkAccent : AppTheme.blueAccent;
+    final correctChar = nameChars[charIdx];
+
     return Column(
       children: [
         const Text(
-          'この ポケモンの なまえは どれ？',
+          'この ポケモンの なまえを よもう！',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 16,
             fontWeight: FontWeight.bold,
             color: AppTheme.darkText,
           ),
@@ -414,7 +447,7 @@ class _QuestionPanel extends StatelessWidget {
           flex: 4,
           child: Center(
             child: Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: AppTheme.white,
                 borderRadius: BorderRadius.circular(24),
@@ -427,19 +460,80 @@ class _QuestionPanel extends StatelessWidget {
                 ],
               ),
               child: PokemonImage(
-                pokemon: question.correct,
-                size: 160,
+                pokemon: pokemon,
+                size: 140,
                 isShiny: false,
               ),
             ),
           ),
         ),
 
+        const SizedBox(height: 8),
+
+        // 名前の文字ボックス列
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(nameChars.length, (i) {
+            final answered = i < charIdx;
+            final current = i == charIdx;
+            final isCorrect = selectedAnswer == correctChar;
+
+            Color bg = const Color(0xFFF5F5F5);
+            Color border = const Color(0xFFDDDDDD);
+            String text = '';
+
+            if (answered) {
+              bg = const Color(0xFFE8F5E9);
+              border = const Color(0xFF81C784);
+              text = nameChars[i];
+            } else if (current) {
+              if (selectedAnswer != null && isCorrect) {
+                bg = const Color(0xFFE8F5E9);
+                border = const Color(0xFF66BB6A);
+                text = correctChar;
+              } else if (selectedAnswer != null && !isCorrect) {
+                bg = const Color(0xFFFFEBEE);
+                border = const Color(0xFFEF9A9A);
+                text = '？';
+              } else {
+                bg = accentColor.withValues(alpha: 0.08);
+                border = accentColor;
+                text = '？';
+              }
+            }
+
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              width: 44,
+              height: 48,
+              decoration: BoxDecoration(
+                color: bg,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: border, width: 2),
+              ),
+              child: Center(
+                child: Text(
+                  text,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: answered || (current && selectedAnswer != null && isCorrect)
+                        ? const Color(0xFF2E7D32)
+                        : AppTheme.darkText,
+                  ),
+                ),
+              ),
+            );
+          }),
+        ),
+
+        const SizedBox(height: 10),
+
         // 4択グリッド
         Expanded(
           flex: 5,
           child: Padding(
-            padding: const EdgeInsets.only(top: 12),
+            padding: const EdgeInsets.only(top: 4),
             child: Column(
               children: [
                 Expanded(
@@ -447,41 +541,41 @@ class _QuestionPanel extends StatelessWidget {
                     children: [
                       Expanded(
                           child: DrillChoiceButton(
-                              choice: nameOf(question.choices[0]),
-                              correct: correctName,
+                              choice: choices[0],
+                              correct: correctChar,
                               selected: selectedAnswer,
                               onTap: onAnswerTap,
-                              fontSize: 22)),
+                              fontSize: 52)),
                       const SizedBox(width: 12),
                       Expanded(
                           child: DrillChoiceButton(
-                              choice: nameOf(question.choices[1]),
-                              correct: correctName,
+                              choice: choices[1],
+                              correct: correctChar,
                               selected: selectedAnswer,
                               onTap: onAnswerTap,
-                              fontSize: 22)),
+                              fontSize: 52)),
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 Expanded(
                   child: Row(
                     children: [
                       Expanded(
                           child: DrillChoiceButton(
-                              choice: nameOf(question.choices[2]),
-                              correct: correctName,
+                              choice: choices[2],
+                              correct: correctChar,
                               selected: selectedAnswer,
                               onTap: onAnswerTap,
-                              fontSize: 22)),
+                              fontSize: 52)),
                       const SizedBox(width: 12),
                       Expanded(
                           child: DrillChoiceButton(
-                              choice: nameOf(question.choices[3]),
-                              correct: correctName,
+                              choice: choices[3],
+                              correct: correctChar,
                               selected: selectedAnswer,
                               onTap: onAnswerTap,
-                              fontSize: 22)),
+                              fontSize: 52)),
                     ],
                   ),
                 ),

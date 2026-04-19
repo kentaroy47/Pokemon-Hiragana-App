@@ -239,22 +239,6 @@ class _RightPanel extends StatelessWidget {
                           const PokemonScreen(mode: PokemonPlayMode.katakanaHard),
                     ),
                   );
-                case _KokugoMode.pokemonHiragana:
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const PokemonReadingQuizScreen(
-                          mode: PokemonReadingMode.hiragana),
-                    ),
-                  );
-                case _KokugoMode.pokemonKatakana:
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const PokemonReadingQuizScreen(
-                          mode: PokemonReadingMode.katakana),
-                    ),
-                  );
               }
             },
           ),
@@ -279,13 +263,29 @@ class _RightPanel extends StatelessWidget {
             emoji: '🌼',
             label: 'カタカナをよもう！',
             color: const Color(0xFFFF9F43),
-            onTap: () {
-              AnalyticsService.logScreenView('katakana_quiz');
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => const KatakanaQuizScreen()),
+            onTap: () async {
+              final result = await showDialog<_KatakanaMode>(
+                context: context,
+                builder: (_) => const _KatakanaModeDialog(),
               );
+              if (result == null) return;
+              if (!context.mounted) return;
+              switch (result) {
+                case _KatakanaMode.random:
+                  AnalyticsService.logScreenView('katakana_quiz');
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const KatakanaQuizScreen()));
+                case _KatakanaMode.pokemonHiragana:
+                  Navigator.push(context,
+                      MaterialPageRoute(
+                          builder: (_) => const PokemonReadingQuizScreen(
+                              mode: PokemonReadingMode.hiragana)));
+                case _KatakanaMode.pokemonKatakana:
+                  Navigator.push(context,
+                      MaterialPageRoute(
+                          builder: (_) => const PokemonReadingQuizScreen(
+                              mode: PokemonReadingMode.katakana)));
+              }
             },
           ),
           const SizedBox(height: 12),
@@ -445,14 +445,9 @@ class _MenuButton extends StatelessWidget {
 
 // ─── こくごモード ──────────────────────────────────────────────────────────────
 
-enum _KokugoMode {
-  hiragana,
-  hiraganaHard,
-  katakana,
-  katakanaHard,
-  pokemonHiragana,
-  pokemonKatakana,
-}
+enum _KokugoMode { hiragana, hiraganaHard, katakana, katakanaHard }
+
+enum _KatakanaMode { random, pokemonHiragana, pokemonKatakana }
 
 class _KokugoModeDialog extends StatelessWidget {
   const _KokugoModeDialog();
@@ -500,23 +495,51 @@ class _KokugoModeDialog extends StatelessWidget {
             color: const Color(0xFFE65100),
             onTap: () => Navigator.pop(context, _KokugoMode.katakanaHard),
           ),
-          const SizedBox(height: 8),
-          const Divider(height: 1),
-          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── カタカナモードダイアログ ──────────────────────────────────────────────────
+
+class _KatakanaModeDialog extends StatelessWidget {
+  const _KatakanaModeDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: const Text(
+        'モードをえらんでね',
+        textAlign: TextAlign.center,
+        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
           _ModeOption(
-            emoji: '🐾',
-            label: 'ポケモンよみかた（ひらがな）',
-            description: 'ポケモンのなまえをひらがなでえらぶ',
-            color: AppTheme.pinkAccent,
-            onTap: () => Navigator.pop(context, _KokugoMode.pokemonHiragana),
+            emoji: '🌼',
+            label: 'ランダムもじクイズ',
+            description: 'ひらがなに対応するカタカナをえらぶ',
+            color: const Color(0xFFFF9F43),
+            onTap: () => Navigator.pop(context, _KatakanaMode.random),
           ),
           const SizedBox(height: 8),
           _ModeOption(
             emoji: '🐾',
-            label: 'ポケモンよみかた（カタカナ）',
-            description: 'ポケモンのなまえをカタカナでえらぶ',
+            label: 'ポケモンのなまえ（ひらがな）',
+            description: 'ポケモンのなまえを1もじずつひらがなでえらぶ',
+            color: AppTheme.pinkAccent,
+            onTap: () => Navigator.pop(context, _KatakanaMode.pokemonHiragana),
+          ),
+          const SizedBox(height: 8),
+          _ModeOption(
+            emoji: '🐾',
+            label: 'ポケモンのなまえ（カタカナ）',
+            description: 'ポケモンのなまえを1もじずつカタカナでえらぶ',
             color: AppTheme.blueAccent,
-            onTap: () => Navigator.pop(context, _KokugoMode.pokemonKatakana),
+            onTap: () => Navigator.pop(context, _KatakanaMode.pokemonKatakana),
           ),
         ],
       ),
