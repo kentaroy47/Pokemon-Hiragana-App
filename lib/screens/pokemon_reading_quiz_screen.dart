@@ -98,24 +98,33 @@ class _PokemonReadingQuizScreenState extends State<PokemonReadingQuizScreen>
   void _onAnswerTap(String choice) {
     if (_selectedAnswer != null) return;
     final correct = choice == _currentChar;
-    setState(() {
-      _selectedAnswer = choice;
-      if (correct) drillCorrectCount++;
-    });
-    if (correct) SoundService.playStrokeComplete();
+    setState(() => _selectedAnswer = choice);
 
-    Future.delayed(const Duration(milliseconds: 700), () {
-      if (!mounted) return;
-      if (_charIdx < _nameChars.length - 1) {
+    if (correct) {
+      drillCorrectCount++;
+      SoundService.playStrokeComplete();
+      Future.delayed(const Duration(milliseconds: 600), () {
+        if (!mounted) return;
+        if (_charIdx < _nameChars.length - 1) {
+          setState(() {
+            _charIdx++;
+            _selectedAnswer = null;
+            _choices = _generateChoices(_currentChar);
+          });
+        } else {
+          _endRound();
+        }
+      });
+    } else {
+      // 不正解: 赤フラッシュ後に選択肢をリフレッシュして再挑戦
+      Future.delayed(const Duration(milliseconds: 600), () {
+        if (!mounted) return;
         setState(() {
-          _charIdx++;
           _selectedAnswer = null;
           _choices = _generateChoices(_currentChar);
         });
-      } else {
-        _endRound();
-      }
-    });
+      });
+    }
   }
 
   void _endRound() {
@@ -212,6 +221,7 @@ class _PokemonReadingQuizScreenState extends State<PokemonReadingQuizScreen>
                               selectedAnswer: _selectedAnswer,
                               onAnswerTap: _onAnswerTap,
                               isHira: isHira,
+                              isShiny: drillPendingIsShiny,
                             ),
                 ),
                 if (drillShowRoundResult)
@@ -468,6 +478,7 @@ class _QuestionPanel extends StatelessWidget {
   final String? selectedAnswer;
   final ValueChanged<String> onAnswerTap;
   final bool isHira;
+  final bool isShiny;
 
   const _QuestionPanel({
     required this.pokemon,
@@ -477,6 +488,7 @@ class _QuestionPanel extends StatelessWidget {
     required this.selectedAnswer,
     required this.onAnswerTap,
     required this.isHira,
+    required this.isShiny,
   });
 
   @override
@@ -516,7 +528,7 @@ class _QuestionPanel extends StatelessWidget {
               child: PokemonImage(
                 pokemon: pokemon,
                 size: 140,
-                isShiny: false,
+                isShiny: isShiny,
               ),
             ),
           ),
