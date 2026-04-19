@@ -103,6 +103,7 @@ class _SugorokuScreenState extends State<SugorokuScreen> with DrillRoundMixin {
   String? _selectedChoice;
   bool _feedbackCorrect = false;
   int? _diceValue;
+  bool _waitingForDiceRoll = false;
   bool _showingLucky = false;
   bool _exhausted = false;
   int _stepsWalked = 0;
@@ -192,19 +193,27 @@ class _SugorokuScreenState extends State<SugorokuScreen> with DrillRoundMixin {
   void _onAnswerTap(String choice) {
     if (_selectedChoice != null || _showingLucky) return;
     final correct = choice == _currentQuiz.choices[_currentQuiz.correctIndex];
-    final dice = drillRandom.nextInt(3) + 1;
     setState(() {
       _selectedChoice = choice;
       _feedbackCorrect = correct;
-      _diceValue = correct ? dice : null;
+      if (correct) _waitingForDiceRoll = true;
     });
     if (correct) {
       SoundService.playStrokeComplete();
       drillCorrectCount++;
-      Future.delayed(const Duration(milliseconds: 1400), _movePlayer);
     } else {
       Future.delayed(const Duration(milliseconds: 1000), _nextQuestion);
     }
+  }
+
+  void _onDiceRoll() {
+    if (!_waitingForDiceRoll) return;
+    final dice = drillRandom.nextInt(3) + 1;
+    setState(() {
+      _diceValue = dice;
+      _waitingForDiceRoll = false;
+    });
+    Future.delayed(const Duration(milliseconds: 900), _movePlayer);
   }
 
   void _movePlayer() {
@@ -298,6 +307,7 @@ class _SugorokuScreenState extends State<SugorokuScreen> with DrillRoundMixin {
       _stepsWalked = 0;
       _selectedChoice = null;
       _diceValue = null;
+      _waitingForDiceRoll = false;
       _showingLucky = false;
       _currentQuiz = _generateQuiz();
     });
@@ -352,7 +362,9 @@ class _SugorokuScreenState extends State<SugorokuScreen> with DrillRoundMixin {
                                   selected: _selectedChoice,
                                   feedbackCorrect: _feedbackCorrect,
                                   diceValue: _diceValue,
+                                  waitingForDiceRoll: _waitingForDiceRoll,
                                   onAnswerTap: _onAnswerTap,
+                                  onDiceRoll: _onDiceRoll,
                                 ),
                 ),
                 if (drillShowRoundResult)
@@ -621,14 +633,18 @@ class _QuestionPanel extends StatelessWidget {
   final String? selected;
   final bool feedbackCorrect;
   final int? diceValue;
+  final bool waitingForDiceRoll;
   final ValueChanged<String> onAnswerTap;
+  final VoidCallback onDiceRoll;
 
   const _QuestionPanel({
     required this.quiz,
     required this.selected,
     required this.feedbackCorrect,
     required this.diceValue,
+    required this.waitingForDiceRoll,
     required this.onAnswerTap,
+    required this.onDiceRoll,
   });
 
   @override
@@ -677,25 +693,60 @@ class _QuestionPanel extends StatelessWidget {
           ),
         ),
 
-        // サイコロ表示
-        if (selected != null && feedbackCorrect && diceValue != null)
+        // サイコロボタン or 結果表示
+        if (selected != null && feedbackCorrect)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text('🎲', style: TextStyle(fontSize: 24)),
-                const SizedBox(width: 8),
-                Text(
-                  '+$diceValue マス！',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF00B894),
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: waitingForDiceRoll
+                ? GestureDetector(
+                    onTap: onDiceRoll,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 28, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00B894),
+                        borderRadius: BorderRadius.circular(30),
+                        boxShadow: [
+                          BoxShadow(
+                            color:
+                                const Color(0xFF00B894).withValues(alpha: 0.4),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('🎲', style: TextStyle(fontSize: 28)),
+                          SizedBox(width: 10),
+                          Text(
+                            'サイコロを ふる！',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('🎲', style: TextStyle(fontSize: 24)),
+                      const SizedBox(width: 8),
+                      Text(
+                        '+$diceValue マス！',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF00B894),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
           ),
 
         // 4択ボタン
