@@ -142,7 +142,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         Switch(
                           value: _limitEnabled,
                           onChanged: _toggleLimit,
-                          activeThumbColor: AppTheme.blueAccent,
+                          activeColor: AppTheme.blueAccent,
                         ),
                       ],
                     ),
