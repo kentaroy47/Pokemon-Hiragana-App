@@ -7,7 +7,7 @@ import 'storage_service.dart';
 class DailyStatsService {
   static final todayCaughtNotifier = ValueNotifier<int>(0);
 
-  static const _drillKeys = ['hiragana', 'math', 'clock', 'katakana_quiz'];
+  static const _drillKeys = ['hiragana', 'math', 'clock', 'katakana_quiz', 'memory', 'sugoroku'];
 
   static final _drillNotifiers = <String, ValueNotifier<int>>{
     for (final k in _drillKeys) k: ValueNotifier(0),
@@ -57,6 +57,8 @@ class DailyStatsService {
       'math': 'さんすう',
       'clock': '時計（とけい）',
       'katakana_quiz': 'カタカナ',
+      'memory': 'カードあわせ',
+      'sugoroku': 'スゴロク',
     };
     return names[drillKey] ?? drillKey;
   }

@@ -48,7 +48,8 @@
       "Bash(find lib *)",
       "Bash(git checkout *)",
       "Bash(git add *)",
-      "Bash(git merge *)"
+      "Bash(git merge *)",
+      "Bash(flutter run *)"
     ]
   }
 }

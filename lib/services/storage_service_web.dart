@@ -88,7 +88,7 @@ class StorageService {
     if (stored == today) return;
     _localStorage.setItem(_todayDateKey, today);
     _localStorage.setItem(_todayCaughtKey, '0');
-    for (final drill in ['hiragana', 'math', 'clock', 'katakana_quiz']) {
+    for (final drill in ['hiragana', 'math', 'clock', 'katakana_quiz', 'memory', 'sugoroku']) {
       _localStorage.setItem('$_drillSessionPrefix$drill', '0');
     }
   }
@@ -139,9 +139,33 @@ class StorageService {
           0;
       final next = current + 1;
       _localStorage.setItem('$_drillSessionPrefix$drillKey', '$next');
+      // 週間サマリ用キーにも書く（日付付きなので翌日以降もデータが残る）
+      final today = _jstDateString();
+      _localStorage.setItem('ws_${drillKey}_$today', '$next');
       return next;
     } catch (_) {
       return 0;
+    }
+  }
+
+  /// 過去7日分のドリルセッション数を返す（古い順、最後が今日）
+  static List<(String, int)> loadWeekSummary(String drillKey) {
+    try {
+      final result = <(String, int)>[];
+      final now = DateTime.now().toUtc().add(const Duration(hours: 9));
+      for (int i = 6; i >= 0; i--) {
+        final day = now.subtract(Duration(days: i));
+        final dateStr =
+            '${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}';
+        final label = '${day.month}/${day.day}';
+        final raw =
+            _localStorage.getItem('ws_${drillKey}_$dateStr')?.toDart ?? '';
+        final count = int.tryParse(raw) ?? 0;
+        result.add((label, count));
+      }
+      return result;
+    } catch (_) {
+      return [];
     }
   }
 

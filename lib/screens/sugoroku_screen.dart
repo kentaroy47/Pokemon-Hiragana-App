@@ -124,8 +124,8 @@ class _SugorokuScreenState extends State<SugorokuScreen> with DrillRoundMixin {
   _Quiz _generateQuiz() {
     final type = drillRandom.nextInt(3);
     if (type == 0) return _generateHiraToKata();
-    if (type == 1) return _generateAddition();
-    return _generateSubtraction();
+    if (type == 1) return _generateAddition(_position);
+    return _generateSubtraction(_position);
   }
 
   _Quiz _generateHiraToKata() {
@@ -146,16 +146,24 @@ class _SugorokuScreenState extends State<SugorokuScreen> with DrillRoundMixin {
     );
   }
 
-  _Quiz _generateAddition() {
-    final a = drillRandom.nextInt(9) + 1;
-    final b = drillRandom.nextInt(10 - a) + 1;
+  _Quiz _generateAddition(int position) {
+    // Zone 0 (pos 0–9): a+b ≤ 10 / Zone 1 (pos 10–19): a+b ≤ 20 / Zone 2 (pos 20–29): a+b ≤ 30
+    final zone = position ~/ 10;
+    final (int minA, int maxA, int maxSum, int spread) = switch (zone) {
+      1 => (5, 19, 20, 5),
+      2 => (10, 29, 30, 8),
+      _ => (1, 9, 10, 3),
+    };
+    final a = drillRandom.nextInt(maxA - minA + 1) + minA;
+    final maxB = maxSum - a;
+    final b = maxB >= 1 ? drillRandom.nextInt(maxB) + 1 : 1;
     final answer = a + b;
     final wrongs = <int>{};
     var attempts = 0;
     while (wrongs.length < 3 && attempts < 50) {
       attempts++;
-      final w = answer + drillRandom.nextInt(7) - 3;
-      if (w != answer && w > 0 && w <= 18) wrongs.add(w);
+      final w = answer + drillRandom.nextInt(spread * 2 + 1) - spread;
+      if (w != answer && w > 0) wrongs.add(w);
     }
     final choices = ([answer, ...wrongs.take(3)]..shuffle(drillRandom))
         .map((n) => n.toString())
@@ -168,15 +176,21 @@ class _SugorokuScreenState extends State<SugorokuScreen> with DrillRoundMixin {
     );
   }
 
-  _Quiz _generateSubtraction() {
-    final a = drillRandom.nextInt(9) + 2;
+  _Quiz _generateSubtraction(int position) {
+    final zone = position ~/ 10;
+    final (int minA, int maxA, int spread) = switch (zone) {
+      1 => (10, 20, 5),
+      2 => (15, 30, 8),
+      _ => (2, 10, 3),
+    };
+    final a = drillRandom.nextInt(maxA - minA + 1) + minA;
     final b = drillRandom.nextInt(a - 1) + 1;
     final answer = a - b;
     final wrongs = <int>{};
     var attempts = 0;
     while (wrongs.length < 3 && attempts < 50) {
       attempts++;
-      final w = answer + drillRandom.nextInt(7) - 3;
+      final w = answer + drillRandom.nextInt(spread * 2 + 1) - spread;
       if (w != answer && w >= 0 && w < a) wrongs.add(w);
     }
     final choices = ([answer, ...wrongs.take(3)]..shuffle(drillRandom))
