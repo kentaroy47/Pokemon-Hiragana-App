@@ -79,12 +79,14 @@ class _Quiz {
   final String prompt;     // 問題文
   final List<String> choices;
   final int correctIndex;
+  final bool isMath;
 
   const _Quiz({
     required this.displayBig,
     required this.prompt,
     required this.choices,
     required this.correctIndex,
+    this.isMath = false,
   });
 }
 
@@ -107,6 +109,7 @@ class _SugorokuScreenState extends State<SugorokuScreen> with DrillRoundMixin {
   bool _showingLucky = false;
   bool _exhausted = false;
   int _stepsWalked = 0;
+  int _mathZonePenalty = 0;
 
   @override
   void initState() {
@@ -124,8 +127,8 @@ class _SugorokuScreenState extends State<SugorokuScreen> with DrillRoundMixin {
   _Quiz _generateQuiz() {
     final type = drillRandom.nextInt(3);
     if (type == 0) return _generateHiraToKata();
-    if (type == 1) return _generateAddition(_position);
-    return _generateSubtraction(_position);
+    if (type == 1) return _generateAddition(_position, _mathZonePenalty);
+    return _generateSubtraction(_position, _mathZonePenalty);
   }
 
   _Quiz _generateHiraToKata() {
@@ -146,9 +149,9 @@ class _SugorokuScreenState extends State<SugorokuScreen> with DrillRoundMixin {
     );
   }
 
-  _Quiz _generateAddition(int position) {
+  _Quiz _generateAddition(int position, int penalty) {
     // Zone 0 (pos 0–9): a+b ≤ 10 / Zone 1 (pos 10–19): a+b ≤ 20 / Zone 2 (pos 20–29): a+b ≤ 30
-    final zone = position ~/ 10;
+    final zone = (position ~/ 10 - penalty).clamp(0, 2);
     final (int minA, int maxA, int maxSum, int spread) = switch (zone) {
       1 => (5, 19, 20, 5),
       2 => (10, 29, 30, 8),
@@ -173,11 +176,12 @@ class _SugorokuScreenState extends State<SugorokuScreen> with DrillRoundMixin {
       prompt: 'こたえは いくつ？',
       choices: choices,
       correctIndex: choices.indexOf(answer.toString()),
+      isMath: true,
     );
   }
 
-  _Quiz _generateSubtraction(int position) {
-    final zone = position ~/ 10;
+  _Quiz _generateSubtraction(int position, int penalty) {
+    final zone = (position ~/ 10 - penalty).clamp(0, 2);
     final (int minA, int maxA, int spread) = switch (zone) {
       1 => (10, 20, 5),
       2 => (15, 30, 8),
@@ -201,6 +205,7 @@ class _SugorokuScreenState extends State<SugorokuScreen> with DrillRoundMixin {
       prompt: 'こたえは いくつ？',
       choices: choices,
       correctIndex: choices.indexOf(answer.toString()),
+      isMath: true,
     );
   }
 
@@ -210,7 +215,11 @@ class _SugorokuScreenState extends State<SugorokuScreen> with DrillRoundMixin {
     setState(() {
       _selectedChoice = choice;
       _feedbackCorrect = correct;
-      if (correct) _waitingForDiceRoll = true;
+      if (correct) {
+        _waitingForDiceRoll = true;
+      } else if (_currentQuiz.isMath) {
+        _mathZonePenalty = (_mathZonePenalty + 1).clamp(0, 2);
+      }
     });
     if (correct) {
       SoundService.playStrokeComplete();
@@ -239,6 +248,7 @@ class _SugorokuScreenState extends State<SugorokuScreen> with DrillRoundMixin {
       _stepsWalked += steps;
       _selectedChoice = null;
       _diceValue = null;
+      _mathZonePenalty = 0;
     });
     if (newPos >= 29) {
       _endRound();
@@ -323,6 +333,7 @@ class _SugorokuScreenState extends State<SugorokuScreen> with DrillRoundMixin {
       _diceValue = null;
       _waitingForDiceRoll = false;
       _showingLucky = false;
+      _mathZonePenalty = 0;
       _currentQuiz = _generateQuiz();
     });
     drillPickPendingPokemon();
