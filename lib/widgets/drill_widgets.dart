@@ -112,6 +112,8 @@ class DrillCaughtBar extends StatelessWidget {
                       builder: (_) => PokedexDialog(
                         caughtPokemon: List.unmodifiable(caughtPokemon),
                         shinyCaughtNames: shinyCaughtNames,
+                        todayCaughtNames:
+                            StorageService.loadTodayCaughtNamesList(),
                       ),
                     ),
             borderRadius: BorderRadius.circular(8),
