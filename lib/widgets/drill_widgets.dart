@@ -4,6 +4,7 @@ import '../app_theme.dart';
 import '../data/pokemon_data.dart';
 import '../widgets/pokemon_widgets.dart';
 import '../widgets/pokedex_dialog.dart';
+import '../services/storage_service.dart';
 
 // ─── 報酬ポケモンプレビュー ───────────────────────────────────────────────────
 /// ラウンド中に左パネルで表示する「ゲットのチャンス！」ブロック
