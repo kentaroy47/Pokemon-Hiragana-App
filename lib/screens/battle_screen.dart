@@ -64,6 +64,7 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
   bool _enemyFainting = false;
   bool _exhausted = false;
   int _totalCorrect = 0;
+  int _zonePenalty = 0;
 
   @override
   void initState() {
@@ -221,6 +222,7 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
     setState(() {
       _selectedChoice = choice;
       _feedbackCorrect = correct;
+      if (!correct) _zonePenalty = (_zonePenalty + 1).clamp(0, 2);
     });
     if (correct) {
       SoundService.playStrokeComplete();
@@ -263,6 +265,7 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
         _enemyHp = _kEnemyHps[next];
         _selectedChoice = null;
         _feedbackCorrect = false;
+        _zonePenalty = 0;
         _currentQuiz = _generateQuiz(next);
       });
     }
@@ -273,7 +276,7 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
     setState(() {
       _selectedChoice = null;
       _feedbackCorrect = false;
-      _currentQuiz = _generateQuiz(_battleIndex);
+      _currentQuiz = _generateQuiz((_battleIndex - _zonePenalty).clamp(0, 2));
     });
   }
 
@@ -321,6 +324,7 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
       _enemyHit = false;
       _battleIndex = 0;
       _enemyHp = _kEnemyHps[0];
+      _zonePenalty = 0;
       _selectedChoice = null;
       _feedbackCorrect = false;
       _currentQuiz = _generateQuiz(0);
