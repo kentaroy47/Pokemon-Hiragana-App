@@ -93,6 +93,16 @@ class AnalyticsService {
     }.jsify());
   }
 
+  static void logBattleRoundComplete({
+    required int score,
+    required bool isShiny,
+  }) {
+    _gtag('event'.toJS, 'battle_round_complete'.toJS, <String, Object>{
+      'score': score,
+      'is_shiny': isShiny,
+    }.jsify());
+  }
+
   static void logPokemonReadingRoundComplete({
     required String mode, // 'hiragana' or 'katakana'
     required int correctCount,

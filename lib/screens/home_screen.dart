@@ -7,6 +7,7 @@ import '../widgets/pokemon_widgets.dart';
 import 'clock_screen.dart';
 import 'katakana_quiz_screen.dart';
 import 'memory_screen.dart';
+import 'battle_screen.dart';
 import 'sugoroku_screen.dart';
 import 'settings_screen.dart';
 import 'math_screen.dart';
@@ -307,33 +308,42 @@ class _RightPanel extends StatelessWidget {
           ),
           const SizedBox(height: 8),
 
-          // カードあわせ button
-          _MenuButton(
-            emoji: '🃏',
-            label: 'カードあわせ',
-            color: const Color(0xFF6C5CE7),
-            onTap: () {
-              AnalyticsService.logScreenView('memory');
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const MemoryScreen()),
-              );
-            },
-          ),
-          const SizedBox(height: 8),
-
-          // スゴロク button
-          _MenuButton(
-            emoji: '🎲',
-            label: 'スゴロク',
-            color: const Color(0xFF00B894),
-            onTap: () {
-              AnalyticsService.logScreenView('sugoroku');
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SugorokuScreen()),
-              );
-            },
+          // ゲームモード（カード・スゴロク・バトル）横並び
+          Row(
+            children: [
+              _GameButton(
+                emoji: '🃏',
+                label: 'カード',
+                color: const Color(0xFF6C5CE7),
+                onTap: () {
+                  AnalyticsService.logScreenView('memory');
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const MemoryScreen()));
+                },
+              ),
+              const SizedBox(width: 8),
+              _GameButton(
+                emoji: '🎲',
+                label: 'スゴロク',
+                color: const Color(0xFF00B894),
+                onTap: () {
+                  AnalyticsService.logScreenView('sugoroku');
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const SugorokuScreen()));
+                },
+              ),
+              const SizedBox(width: 8),
+              _GameButton(
+                emoji: '⚔️',
+                label: 'バトル！',
+                color: const Color(0xFFE17055),
+                onTap: () {
+                  AnalyticsService.logScreenView('battle');
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const BattleScreen()));
+                },
+              ),
+            ],
           ),
 
           const SizedBox(height: 8),
@@ -469,6 +479,53 @@ class _MenuButton extends StatelessWidget {
             const Icon(Icons.arrow_forward_ios_rounded,
                 color: Colors.white54, size: 18),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── ゲームモードボタン（小） ──────────────────────────────────────────────────
+
+class _GameButton extends StatelessWidget {
+  final String emoji;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _GameButton({
+    required this.emoji,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(emoji, style: const TextStyle(fontSize: 22)),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -705,6 +762,7 @@ class _TodayStatsRow extends StatelessWidget {
       ('clock', '🕐', 'とけい'),
       ('memory', '🃏', 'カード'),
       ('sugoroku', '🎲', 'スゴロク'),
+      ('battle', '⚔️', 'バトル'),
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

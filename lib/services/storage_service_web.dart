@@ -88,7 +88,7 @@ class StorageService {
     if (stored == today) return;
     _localStorage.setItem(_todayDateKey, today);
     _localStorage.setItem(_todayCaughtKey, '0');
-    for (final drill in ['hiragana', 'math', 'clock', 'katakana_quiz', 'memory', 'sugoroku']) {
+    for (final drill in ['hiragana', 'math', 'clock', 'katakana_quiz', 'memory', 'sugoroku', 'battle']) {
       _localStorage.setItem('$_drillSessionPrefix$drill', '0');
     }
   }

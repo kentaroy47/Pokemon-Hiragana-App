@@ -34,6 +34,10 @@ class AnalyticsService {
     required int stepsWalked,
     required bool isShiny,
   }) {}
+  static void logBattleRoundComplete({
+    required int score,
+    required bool isShiny,
+  }) {}
   static void logPokemonReadingRoundComplete({
     required String mode,
     required int correctCount,
