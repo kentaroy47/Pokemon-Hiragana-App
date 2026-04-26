@@ -18,6 +18,7 @@ const _dailyLimitCountKey = 'daily_limit_count';
 const _todayDateKey = 'today_date_jst';
 const _todayCaughtKey = 'today_caught_count';
 const _drillSessionPrefix = 'today_sessions_';
+const _todayCaughtNamesKey = 'today_caught_names_list';
 
 /// ブラウザの localStorage を使ったデータ永続化サービス
 class StorageService {
@@ -88,6 +89,7 @@ class StorageService {
     if (stored == today) return;
     _localStorage.setItem(_todayDateKey, today);
     _localStorage.setItem(_todayCaughtKey, '0');
+    _localStorage.setItem(_todayCaughtNamesKey, '');
     for (final drill in ['hiragana', 'math', 'clock', 'katakana_quiz', 'memory', 'sugoroku', 'battle']) {
       _localStorage.setItem('$_drillSessionPrefix$drill', '0');
     }
@@ -252,6 +254,28 @@ class StorageService {
     } catch (_) {
       return 0;
     }
+  }
+
+  /// 今日ゲットしたポケモンのカタカナ名リストを読み込む
+  static List<String> loadTodayCaughtNamesList() {
+    try {
+      _resetTodayIfNeeded();
+      final raw = _localStorage.getItem(_todayCaughtNamesKey)?.toDart ?? '';
+      if (raw.isEmpty) return [];
+      return raw.split(',').where((s) => s.isNotEmpty).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// 今日ゲットしたポケモン名を追加する
+  static void addTodayCaughtName(String katakana) {
+    try {
+      _resetTodayIfNeeded();
+      final existing = _localStorage.getItem(_todayCaughtNamesKey)?.toDart ?? '';
+      final next = existing.isEmpty ? katakana : '$existing,$katakana';
+      _localStorage.setItem(_todayCaughtNamesKey, next);
+    } catch (_) {}
   }
 
   /// 今日の指定モードのプレイ回数を1増やす

@@ -49,7 +49,12 @@
       "Bash(git checkout *)",
       "Bash(git add *)",
       "Bash(git merge *)",
-      "Bash(flutter run *)"
+      "Bash(flutter run *)",
+      "Bash(node -e ' *)",
+      "Bash(powershell -Command ' *)",
+      "Bash(python add_pokemon_forms.py)",
+      "Bash(dart --version)",
+      "Bash(dart -e 'import '\\\\''dart:io'\\\\''; import '\\\\''dart:convert'\\\\''; void main\\(\\) { final d = jsonDecode\\(File\\('\\\\''assets/data/pokemon_all.json'\\\\''\\).readAsStringSync\\(\\)\\) as List; final mega = d.where\\(\\(e\\) => e['\\\\''id'\\\\''] >= 10000 && e['\\\\''id'\\\\''] < 10195\\).length; final gmax = d.where\\(\\(e\\) => e['\\\\''id'\\\\''] >= 10195\\).length; print\\('\\\\''Total: ${d.length}, Mega: $mega, Gmax: $gmax'\\\\''\\); }')"
     ]
   }
 }

@@ -21,4 +21,6 @@ class StorageService {
   static int loadTodayDrillSessions(String drillKey) => 0;
   static int incrementTodayDrillSessions(String drillKey) => 0;
   static List<(String, int)> loadWeekSummary(String drillKey) => [];
+  static List<String> loadTodayCaughtNamesList() => [];
+  static void addTodayCaughtName(String katakana) {}
 }

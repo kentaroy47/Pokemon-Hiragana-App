@@ -10,11 +10,13 @@ import 'pokemon_widgets.dart';
 class PokedexDialog extends StatefulWidget {
   final List<PokemonEntry> caughtPokemon;
   final Set<String> shinyCaughtNames;
+  final List<String> todayCaughtNames;
 
   const PokedexDialog({
     super.key,
     required this.caughtPokemon,
     required this.shinyCaughtNames,
+    this.todayCaughtNames = const [],
   });
 
   @override
@@ -28,12 +30,14 @@ class _PokedexDialogState extends State<PokedexDialog>
   late final Map<String, int> _counts;
   late final List<PokemonEntry> _normal;
   late final List<PokemonEntry> _mega;
+  late final List<PokemonEntry> _gmax;
+  late final List<PokemonEntry> _today;
   late final List<PokemonEntry> _shiny;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
 
     _counts = {};
     final uniqueAll = <PokemonEntry>[];
@@ -42,8 +46,19 @@ class _PokedexDialogState extends State<PokedexDialog>
       _counts[p.katakana] = (_counts[p.katakana] ?? 0) + 1;
     }
     _normal = uniqueAll.where((p) => p.pokedexId < 10000).toList();
-    _mega   = uniqueAll.where((p) => p.pokedexId >= 10000).toList();
+    _mega   = uniqueAll.where((p) => p.pokedexId >= 10000 && p.pokedexId < 10195).toList();
+    _gmax   = uniqueAll.where((p) => p.pokedexId >= 10195).toList();
     _shiny  = uniqueAll.where((p) => widget.shinyCaughtNames.contains(p.katakana)).toList();
+
+    final todaySet = widget.todayCaughtNames.toSet();
+    final todayCounts = <String, int>{};
+    for (final n in widget.todayCaughtNames) {
+      todayCounts[n] = (todayCounts[n] ?? 0) + 1;
+    }
+    _today = uniqueAll.where((p) => todaySet.contains(p.katakana)).toList();
+    for (final e in todayCounts.entries) {
+      _counts[e.key] = e.value;
+    }
   }
 
   @override
@@ -57,7 +72,7 @@ class _PokedexDialogState extends State<PokedexDialog>
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: SizedBox(
-        width: 680,
+        width: 720,
         height: 500,
         child: Column(
           children: [
@@ -85,17 +100,21 @@ class _PokedexDialogState extends State<PokedexDialog>
             ),
             TabBar(
               controller: _tabController,
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
               labelStyle: const TextStyle(
-                fontSize: 14,
+                fontSize: 13,
                 fontWeight: FontWeight.bold,
               ),
-              unselectedLabelStyle: const TextStyle(fontSize: 14),
+              unselectedLabelStyle: const TextStyle(fontSize: 13),
               labelColor: AppTheme.blueAccent,
               unselectedLabelColor: AppTheme.textGray,
               indicatorColor: AppTheme.blueAccent,
               tabs: [
                 Tab(text: 'ポケモン  ${_normal.length}ひき'),
+                Tab(text: '🌟きょうゲット  ${_today.length}ひき'),
                 Tab(text: 'メガシンカ  ${_mega.length}ひき'),
+                Tab(text: 'キョダイマックス  ${_gmax.length}ひき'),
                 Tab(text: '✨いろちがい  ${_shiny.length}ひき'),
               ],
             ),
@@ -106,7 +125,12 @@ class _PokedexDialogState extends State<PokedexDialog>
                 children: [
                   _PokedexGrid(entries: _normal, counts: _counts,
                       shinyCaughtNames: widget.shinyCaughtNames),
+                  _PokedexGrid(entries: _today,  counts: _counts,
+                      shinyCaughtNames: widget.shinyCaughtNames,
+                      emptyMessage: 'きょうはまだゲットしていないよ！'),
                   _PokedexGrid(entries: _mega,   counts: _counts,
+                      shinyCaughtNames: widget.shinyCaughtNames),
+                  _PokedexGrid(entries: _gmax,   counts: _counts,
                       shinyCaughtNames: widget.shinyCaughtNames),
                   _PokedexGrid(entries: _shiny,  counts: _counts,
                       shinyCaughtNames: widget.shinyCaughtNames, forceShiny: true),
@@ -127,26 +151,28 @@ class _PokedexGrid extends StatelessWidget {
   final Map<String, int> counts;
   final Set<String> shinyCaughtNames;
   final bool forceShiny;
+  final String emptyMessage;
 
   const _PokedexGrid({
     required this.entries,
     required this.counts,
     required this.shinyCaughtNames,
     this.forceShiny = false,
+    this.emptyMessage = 'まだゲットしていないよ！',
   });
 
   @override
   Widget build(BuildContext context) {
     if (entries.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('🔍', style: TextStyle(fontSize: 48)),
-            SizedBox(height: 12),
+            const Text('🔍', style: TextStyle(fontSize: 48)),
+            const SizedBox(height: 12),
             Text(
-              'まだゲットしていないよ！',
-              style: TextStyle(fontSize: 18, color: AppTheme.textGray),
+              emptyMessage,
+              style: const TextStyle(fontSize: 18, color: AppTheme.textGray),
             ),
           ],
         ),

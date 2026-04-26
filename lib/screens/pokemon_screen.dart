@@ -132,6 +132,7 @@ class _PokemonScreenState extends State<PokemonScreen> {
         });
         StorageService.saveCaughtNames(
             _caughtPokemon.map((p) => p.katakana).toList());
+        StorageService.addTodayCaughtName(_pokemon.katakana);
         if (_isShiny) {
           StorageService.saveShinyCaughtNames(_shinyCaughtNames);
         }

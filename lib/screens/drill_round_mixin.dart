@@ -54,6 +54,7 @@ mixin DrillRoundMixin<T extends StatefulWidget> on State<T> {
       drillCaughtPokemon.add(reward);
       StorageService.saveCaughtNames(
           drillCaughtPokemon.map((p) => p.katakana).toList());
+      StorageService.addTodayCaughtName(reward.katakana);
       if (shiny) {
         drillShinyCaughtNames.add(reward.katakana);
         StorageService.saveShinyCaughtNames(drillShinyCaughtNames);

@@ -381,6 +381,8 @@ class _RightPanel extends StatelessWidget {
                       caughtPokemon: List.unmodifiable(
                           caught.cast()),
                       shinyCaughtNames: shinyNames,
+                      todayCaughtNames:
+                          StorageService.loadTodayCaughtNamesList(),
                     ),
                   );
                 },
