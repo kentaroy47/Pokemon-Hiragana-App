@@ -372,6 +372,8 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
                                 battleIndex: _battleIndex,
                                 isHit: _enemyHit,
                                 isFainting: _enemyFainting,
+                                playerPokemon: drillPendingRewardPokemon,
+                                totalCorrect: _totalCorrect,
                               ),
                             ),
                             Expanded(
@@ -544,6 +546,8 @@ class _BattleScene extends StatelessWidget {
   final int battleIndex;
   final bool isHit;
   final bool isFainting;
+  final PokemonEntry? playerPokemon;
+  final int totalCorrect;
 
   const _BattleScene({
     required this.enemy,
@@ -552,7 +556,11 @@ class _BattleScene extends StatelessWidget {
     required this.battleIndex,
     required this.isHit,
     required this.isFainting,
+    this.playerPokemon,
+    required this.totalCorrect,
   });
+
+  static const _kTotalQuestions = 10; // _kEnemyHps の合計
 
   @override
   Widget build(BuildContext context) {
@@ -562,97 +570,154 @@ class _BattleScene extends StatelessWidget {
         : hpRatio > 0.25
             ? const Color(0xFFF39C12)
             : const Color(0xFFE74C3C);
+    final powerRatio = (totalCorrect / _kTotalQuestions).clamp(0.0, 1.0);
 
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF5DA0D0), Color(0xFF8EC8F0)],
+          colors: [Color(0xFF5DA0D0), Color(0xFF8EC8F0), Color(0xFF9DD4A0)],
+          stops: [0.0, 0.58, 1.0],
         ),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Column(
         children: [
-          // HP情報（左）
+          // ─── てき側（上） ─────────────────────────────────────
           Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  enemy.katakana,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    shadows: [Shadow(color: Colors.black38, blurRadius: 4)],
+            flex: 3,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 16, 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          enemy.katakana,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            shadows: [Shadow(color: Colors.black38, blurRadius: 4)],
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'てきポケモン ${battleIndex + 1} / 3',
+                          style: const TextStyle(fontSize: 11, color: Colors.white70),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Text('HP ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: LinearProgressIndicator(
+                                  value: hpRatio,
+                                  backgroundColor: Colors.white30,
+                                  valueColor: AlwaysStoppedAnimation(hpColor),
+                                  minHeight: 10,
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(left: 6),
+                              child: Text('$hp / $maxHp',
+                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'てきポケモン ${battleIndex + 1} / 3',
-                  style: const TextStyle(
-                      fontSize: 12, color: Colors.white70),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    const Text(
-                      'HP ',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                  const SizedBox(width: 12),
+                  AnimatedOpacity(
+                    opacity: isFainting ? 0.0 : 1.0,
+                    duration: const Duration(milliseconds: 700),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        PokemonImage(pokemon: enemy, size: 100, isShiny: false),
+                        if (isHit)
+                          Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              color: Colors.red.withValues(alpha: 0.45),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                      ],
                     ),
-                    Expanded(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(5),
-                        child: LinearProgressIndicator(
-                          value: hpRatio,
-                          backgroundColor: Colors.white30,
-                          valueColor: AlwaysStoppedAnimation(hpColor),
-                          minHeight: 12,
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 8),
-                      child: Text(
-                        '$hp / $maxHp',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(width: 24),
-          // ポケモン画像（右）
-          AnimatedOpacity(
-            opacity: isFainting ? 0.0 : 1.0,
-            duration: const Duration(milliseconds: 700),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                PokemonImage(pokemon: enemy, size: 130, isShiny: false),
-                if (isHit)
-                  Container(
-                    width: 130,
-                    height: 130,
-                    decoration: BoxDecoration(
-                      color: Colors.red.withValues(alpha: 0.45),
-                      borderRadius: BorderRadius.circular(8),
+          Container(height: 2, color: Colors.white30),
+          // ─── じぶん側（下） ───────────────────────────────────
+          Expanded(
+            flex: 2,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 20, 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  if (playerPokemon != null)
+                    PokemonImage(pokemon: playerPokemon!, size: 68, isShiny: false)
+                  else
+                    const SizedBox(width: 68),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          playerPokemon?.katakana ?? 'じぶんのポケモン',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            shadows: [Shadow(color: Colors.black38, blurRadius: 4)],
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Text('⚡ ', style: TextStyle(fontSize: 11)),
+                            const Text('パワー ',
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: LinearProgressIndicator(
+                                  value: powerRatio,
+                                  backgroundColor: Colors.white30,
+                                  valueColor: const AlwaysStoppedAnimation(Color(0xFFF1C40F)),
+                                  minHeight: 10,
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(left: 6),
+                              child: Text('${totalCorrect * 10}',
+                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
