@@ -95,12 +95,14 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
   bool _exhausted = false;
   int _totalCorrect = 0;
   int _zonePenalty = 0;
+  PokemonEntry? _playerBattlePokemon; // バトルに出す伝説ポケモン（報酬とは別）
 
   @override
   void initState() {
     super.initState();
     drillInitPokemonState();
-    _pickLegendaryPokemon();
+    drillPickPendingPokemon(); // ゲットできる報酬ポケモン（ランダム）
+    _pickPlayerBattlePokemon(); // バトルに出す伝説ポケモン
     _enemies = _pickEnemies();
     _currentQuiz = _generateQuiz(0);
     if (drillIsExhausted('battle')) {
@@ -114,20 +116,16 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
       .where((p) => _legendaryBst.containsKey(p.pokedexId))
       .toList();
 
-  int get _playerBst => _legendaryBst[drillPendingRewardPokemon?.pokedexId] ?? 600;
+  int get _playerBst => _legendaryBst[_playerBattlePokemon?.pokedexId] ?? 600;
 
-  void _pickLegendaryPokemon() {
+  void _pickPlayerBattlePokemon() {
     final pool = _legendaryPool;
-    if (pool.isEmpty) {
-      drillPickPendingPokemon();
-      return;
-    }
+    if (pool.isEmpty) return;
     int idx;
     do {
       idx = drillRandom.nextInt(pool.length);
-    } while (pool.length > 1 && pool[idx].katakana == drillPendingRewardPokemon?.katakana);
-    drillPendingRewardPokemon = pool[idx];
-    drillPendingIsShiny = drillRandom.nextDouble() < 0.2;
+    } while (pool.length > 1 && pool[idx].katakana == _playerBattlePokemon?.katakana);
+    _playerBattlePokemon = pool[idx];
   }
 
   List<PokemonEntry> _pickEnemies() {
@@ -379,7 +377,8 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
       _feedbackCorrect = false;
       _currentQuiz = _generateQuiz(0);
     });
-    _pickLegendaryPokemon();
+    drillPickPendingPokemon();
+    _pickPlayerBattlePokemon();
   }
 
   @override
@@ -422,7 +421,7 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
                                 battleIndex: _battleIndex,
                                 isHit: _enemyHit,
                                 isFainting: _enemyFainting,
-                                playerPokemon: drillPendingRewardPokemon,
+                                playerPokemon: _playerBattlePokemon,
                                 playerBst: _playerBst,
                                 totalCorrect: _totalCorrect,
                               ),
