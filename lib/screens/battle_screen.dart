@@ -30,6 +30,36 @@ const List<_KanaPair> _kanaPairs = [
 // 3匹のHP（合計10問）
 const _kEnemyHps = [3, 3, 4];
 
+// 伝説・幻ポケモン 図鑑ID → 種族値合計
+const Map<int, int> _legendaryBst = {
+  // Gen 1
+  144: 580, 145: 580, 146: 580, 150: 680, 151: 600,
+  // Gen 2
+  243: 580, 244: 580, 245: 580, 249: 680, 250: 680, 251: 600,
+  // Gen 3
+  377: 580, 378: 580, 379: 580, 380: 600, 381: 600,
+  382: 670, 383: 670, 384: 680, 385: 600, 386: 600,
+  // Gen 4
+  480: 580, 481: 580, 482: 580, 483: 680, 484: 680,
+  485: 600, 486: 670, 487: 680, 488: 600, 490: 600,
+  491: 600, 492: 600, 493: 720,
+  // Gen 5
+  494: 600, 638: 580, 639: 580, 640: 580, 641: 580,
+  642: 580, 643: 680, 644: 680, 645: 600, 646: 660,
+  647: 580, 648: 600, 649: 600,
+  // Gen 6
+  716: 680, 717: 680, 718: 600, 719: 600, 720: 600, 721: 600,
+  // Gen 7
+  785: 570, 786: 570, 787: 570, 788: 570,
+  791: 680, 792: 680, 800: 600, 801: 600, 802: 600, 807: 600, 809: 600,
+  // Gen 8
+  888: 670, 889: 670, 890: 690, 893: 600, 894: 580, 895: 580,
+  896: 580, 897: 580, 898: 680,
+  // Gen 9
+  1001: 570, 1002: 570, 1003: 570, 1004: 570,
+  1007: 670, 1008: 670, 1017: 550, 1024: 700,
+};
+
 class _Quiz {
   final String displayBig;
   final String prompt;
@@ -70,7 +100,7 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
   void initState() {
     super.initState();
     drillInitPokemonState();
-    drillPickPendingPokemon();
+    _pickLegendaryPokemon();
     _enemies = _pickEnemies();
     _currentQuiz = _generateQuiz(0);
     if (drillIsExhausted('battle')) {
@@ -78,6 +108,26 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
       drillPendingRewardPokemon = null;
     }
     AnalyticsService.logScreenView('battle');
+  }
+
+  List<PokemonEntry> get _legendaryPool => PokemonRepository.all
+      .where((p) => _legendaryBst.containsKey(p.pokedexId))
+      .toList();
+
+  int get _playerBst => _legendaryBst[drillPendingRewardPokemon?.pokedexId] ?? 600;
+
+  void _pickLegendaryPokemon() {
+    final pool = _legendaryPool;
+    if (pool.isEmpty) {
+      drillPickPendingPokemon();
+      return;
+    }
+    int idx;
+    do {
+      idx = drillRandom.nextInt(pool.length);
+    } while (pool.length > 1 && pool[idx].katakana == drillPendingRewardPokemon?.katakana);
+    drillPendingRewardPokemon = pool[idx];
+    drillPendingIsShiny = drillRandom.nextDouble() < 0.2;
   }
 
   List<PokemonEntry> _pickEnemies() {
@@ -329,7 +379,7 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
       _feedbackCorrect = false;
       _currentQuiz = _generateQuiz(0);
     });
-    drillPickPendingPokemon();
+    _pickLegendaryPokemon();
   }
 
   @override
@@ -373,6 +423,7 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
                                 isHit: _enemyHit,
                                 isFainting: _enemyFainting,
                                 playerPokemon: drillPendingRewardPokemon,
+                                playerBst: _playerBst,
                                 totalCorrect: _totalCorrect,
                               ),
                             ),
@@ -547,6 +598,7 @@ class _BattleScene extends StatelessWidget {
   final bool isHit;
   final bool isFainting;
   final PokemonEntry? playerPokemon;
+  final int playerBst;
   final int totalCorrect;
 
   const _BattleScene({
@@ -557,6 +609,7 @@ class _BattleScene extends StatelessWidget {
     required this.isHit,
     required this.isFainting,
     this.playerPokemon,
+    required this.playerBst,
     required this.totalCorrect,
   });
 
@@ -689,12 +742,29 @@ class _BattleScene extends StatelessWidget {
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            const Text('★ ', style: TextStyle(fontSize: 11, color: Color(0xFFF1C40F))),
+                            const Text('つよさ ',
+                                style: TextStyle(fontSize: 11, color: Colors.white70)),
+                            Text(
+                              '$playerBst',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFF1C40F),
+                                shadows: [Shadow(color: Colors.black26, blurRadius: 3)],
+                              ),
+                            ),
+                          ],
+                        ),
                         const SizedBox(height: 4),
                         Row(
                           children: [
                             const Text('⚡ ', style: TextStyle(fontSize: 11)),
-                            const Text('パワー ',
-                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
+                            const Text('バトルパワー ',
+                                style: TextStyle(fontSize: 10, color: Colors.white70)),
                             Expanded(
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(4),
@@ -702,14 +772,14 @@ class _BattleScene extends StatelessWidget {
                                   value: powerRatio,
                                   backgroundColor: Colors.white30,
                                   valueColor: const AlwaysStoppedAnimation(Color(0xFFF1C40F)),
-                                  minHeight: 10,
+                                  minHeight: 8,
                                 ),
                               ),
                             ),
                             Padding(
-                              padding: const EdgeInsets.only(left: 6),
-                              child: Text('${totalCorrect * 10}',
-                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
+                              padding: const EdgeInsets.only(left: 4),
+                              child: Text('$totalCorrect',
+                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
                             ),
                           ],
                         ),
