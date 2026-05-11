@@ -95,6 +95,8 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
   bool _exhausted = false;
   int _totalCorrect = 0;
   int _zonePenalty = 0;
+  int _powerLevel = 0;      // 0〜2 チャージ中、3 = とくぎ発動可能
+  bool _specialHit = false; // とくぎ発動時の黄色フラッシュ
   PokemonEntry? _playerBattlePokemon; // バトルに出す伝説ポケモン（報酬とは別）
 
   @override
@@ -265,7 +267,7 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
   }
 
   void _onAnswerTap(String choice) {
-    if (_selectedChoice != null || _enemyFainting) return;
+    if (_selectedChoice != null || _enemyFainting || _powerLevel >= 3) return;
     final correct = choice == _currentQuiz.choices[_currentQuiz.correctIndex];
     setState(() {
       _selectedChoice = choice;
@@ -276,22 +278,30 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
       SoundService.playStrokeComplete();
       drillCorrectCount++;
       _totalCorrect++;
+      setState(() => _powerLevel = (_powerLevel + 1).clamp(0, 3));
       _triggerHit();
-      Future.delayed(const Duration(milliseconds: 700), _applyDamage);
+      Future.delayed(const Duration(milliseconds: 700), () => _applyDamage());
     } else {
       Future.delayed(const Duration(milliseconds: 900), _nextQuestion);
     }
   }
 
-  Future<void> _triggerHit() async {
-    setState(() => _enemyHit = true);
-    await Future.delayed(const Duration(milliseconds: 350));
-    if (mounted) setState(() => _enemyHit = false);
+  void _useSpecial() {
+    if (_powerLevel < 3 || _enemyFainting) return;
+    setState(() => _powerLevel = 0);
+    _triggerHit(isSpecial: true);
+    Future.delayed(const Duration(milliseconds: 700), () => _applyDamage(bonus: 1));
   }
 
-  void _applyDamage() {
+  Future<void> _triggerHit({bool isSpecial = false}) async {
+    setState(() { _enemyHit = true; _specialHit = isSpecial; });
+    await Future.delayed(const Duration(milliseconds: 350));
+    if (mounted) setState(() { _enemyHit = false; _specialHit = false; });
+  }
+
+  void _applyDamage({int bonus = 0}) {
     if (!mounted) return;
-    final newHp = _enemyHp - 1;
+    final newHp = (_enemyHp - 1 - bonus).clamp(0, 99);
     setState(() => _enemyHp = newHp);
     if (newHp <= 0) {
       setState(() => _enemyFainting = true);
@@ -368,6 +378,7 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
       drillCorrectCount = 0;
       _enemies = _pickEnemies();
       _totalCorrect = 0;
+      _powerLevel = 0;
       _enemyFainting = false;
       _enemyHit = false;
       _battleIndex = 0;
@@ -420,24 +431,27 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
                                 maxHp: _kEnemyHps[_battleIndex.clamp(0, 2)],
                                 battleIndex: _battleIndex,
                                 isHit: _enemyHit,
+                                isSpecialHit: _specialHit,
                                 isFainting: _enemyFainting,
                                 playerPokemon: _playerBattlePokemon,
                                 playerBst: _playerBst,
-                                totalCorrect: _totalCorrect,
+                                powerLevel: _powerLevel,
                               ),
                             ),
                             Expanded(
                               flex: 6,
-                              child: Padding(
-                                padding: const EdgeInsets.fromLTRB(
-                                    16, 12, 24, 16),
-                                child: _QuestionPanel(
-                                  quiz: _currentQuiz,
-                                  selected: _selectedChoice,
-                                  feedbackCorrect: _feedbackCorrect,
-                                  onAnswerTap: _onAnswerTap,
-                                ),
-                              ),
+                              child: _powerLevel >= 3
+                                  ? _SpecialButton(onTap: _useSpecial)
+                                  : Padding(
+                                      padding: const EdgeInsets.fromLTRB(
+                                          16, 12, 24, 16),
+                                      child: _QuestionPanel(
+                                        quiz: _currentQuiz,
+                                        selected: _selectedChoice,
+                                        feedbackCorrect: _feedbackCorrect,
+                                        onAnswerTap: _onAnswerTap,
+                                      ),
+                                    ),
                             ),
                           ],
                         ),
@@ -596,9 +610,10 @@ class _BattleScene extends StatelessWidget {
   final int battleIndex;
   final bool isHit;
   final bool isFainting;
+  final bool isSpecialHit;
   final PokemonEntry? playerPokemon;
   final int playerBst;
-  final int totalCorrect;
+  final int powerLevel; // 0〜3 (3 = とくぎ発動)
 
   const _BattleScene({
     required this.enemy,
@@ -606,13 +621,37 @@ class _BattleScene extends StatelessWidget {
     required this.maxHp,
     required this.battleIndex,
     required this.isHit,
+    required this.isSpecialHit,
     required this.isFainting,
     this.playerPokemon,
     required this.playerBst,
-    required this.totalCorrect,
+    required this.powerLevel,
   });
 
-  static const _kTotalQuestions = 10; // _kEnemyHps の合計
+  // BST を星1〜5に変換
+  static int _bstToStars(int bst) {
+    if (bst >= 700) return 5;
+    if (bst >= 670) return 4;
+    if (bst >= 600) return 3;
+    if (bst >= 570) return 2;
+    return 1;
+  }
+
+  static Widget _label(String text, Color bg) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          text,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -622,7 +661,7 @@ class _BattleScene extends StatelessWidget {
         : hpRatio > 0.25
             ? const Color(0xFFF39C12)
             : const Color(0xFFE74C3C);
-    final powerRatio = (totalCorrect / _kTotalQuestions).clamp(0.0, 1.0);
+    final stars = _bstToStars(playerBst);
 
     return Container(
       decoration: const BoxDecoration(
@@ -648,6 +687,8 @@ class _BattleScene extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        _label('てき ${battleIndex + 1} / 3', const Color(0xFFE74C3C)),
+                        const SizedBox(height: 6),
                         Text(
                           enemy.katakana,
                           style: const TextStyle(
@@ -658,12 +699,7 @@ class _BattleScene extends StatelessWidget {
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'てきポケモン ${battleIndex + 1} / 3',
-                          style: const TextStyle(fontSize: 11, color: Colors.white70),
-                        ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
                         Row(
                           children: [
                             const Text('HP ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
@@ -701,7 +737,9 @@ class _BattleScene extends StatelessWidget {
                             width: 100,
                             height: 100,
                             decoration: BoxDecoration(
-                              color: Colors.red.withValues(alpha: 0.45),
+                              color: isSpecialHit
+                                  ? const Color(0xFFF1C40F).withValues(alpha: 0.6)
+                                  : Colors.red.withValues(alpha: 0.45),
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
@@ -716,7 +754,8 @@ class _BattleScene extends StatelessWidget {
           // ─── じぶん側（下） ───────────────────────────────────
           Expanded(
             flex: 2,
-            child: Padding(
+            child: Container(
+              color: Colors.black12,
               padding: const EdgeInsets.fromLTRB(16, 4, 20, 8),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -731,8 +770,10 @@ class _BattleScene extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        _label('じぶん', const Color(0xFF27AE60)),
+                        const SizedBox(height: 4),
                         Text(
-                          playerPokemon?.katakana ?? 'じぶんのポケモン',
+                          playerPokemon?.katakana ?? '？？？',
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
@@ -744,42 +785,37 @@ class _BattleScene extends StatelessWidget {
                         const SizedBox(height: 2),
                         Row(
                           children: [
-                            const Text('★ ', style: TextStyle(fontSize: 11, color: Color(0xFFF1C40F))),
-                            const Text('つよさ ',
-                                style: TextStyle(fontSize: 11, color: Colors.white70)),
-                            Text(
-                              '$playerBst',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFFF1C40F),
-                                shadows: [Shadow(color: Colors.black26, blurRadius: 3)],
+                            for (int i = 0; i < 5; i++)
+                              Icon(
+                                i < stars ? Icons.star_rounded : Icons.star_outline_rounded,
+                                size: 15,
+                                color: const Color(0xFFF1C40F),
                               ),
-                            ),
                           ],
                         ),
                         const SizedBox(height: 4),
+                        // ─ とくぎゲージ ─
                         Row(
                           children: [
-                            const Text('⚡ ', style: TextStyle(fontSize: 11)),
-                            const Text('バトルパワー ',
+                            const Text('とくぎ ',
                                 style: TextStyle(fontSize: 10, color: Colors.white70)),
-                            Expanded(
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(4),
-                                child: LinearProgressIndicator(
-                                  value: powerRatio,
-                                  backgroundColor: Colors.white30,
-                                  valueColor: const AlwaysStoppedAnimation(Color(0xFFF1C40F)),
-                                  minHeight: 8,
+                            for (int i = 0; i < 3; i++)
+                              Container(
+                                width: 18,
+                                height: 12,
+                                margin: const EdgeInsets.only(right: 3),
+                                decoration: BoxDecoration(
+                                  color: i < powerLevel
+                                      ? (powerLevel == 3
+                                          ? const Color(0xFFF1C40F)
+                                          : const Color(0xFFE67E22))
+                                      : Colors.white30,
+                                  borderRadius: BorderRadius.circular(3),
                                 ),
                               ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.only(left: 4),
-                              child: Text('$totalCorrect',
-                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
-                            ),
+                            if (powerLevel == 3)
+                              const Text(' ⚡',
+                                  style: TextStyle(fontSize: 13)),
                           ],
                         ),
                       ],
@@ -914,6 +950,60 @@ class _QuestionPanel extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ─── とくぎボタン ─────────────────────────────────────────────────────────────────
+
+class _SpecialButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const _SpecialButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'とくぎゲージが\nいっぱいになった！',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.darkText,
+            ),
+          ),
+          const SizedBox(height: 24),
+          GestureDetector(
+            onTap: onTap,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 22),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1C40F),
+                borderRadius: BorderRadius.circular(40),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFF1C40F).withValues(alpha: 0.55),
+                    blurRadius: 24,
+                    spreadRadius: 4,
+                  ),
+                ],
+              ),
+              child: const Text(
+                '⚡ わざを だす！',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  shadows: [Shadow(color: Colors.black26, blurRadius: 4)],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
