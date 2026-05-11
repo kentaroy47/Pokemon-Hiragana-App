@@ -27,8 +27,8 @@ const List<_KanaPair> _kanaPairs = [
   ('わ', 'ワ'), ('を', 'ヲ'), ('ん', 'ン'),
 ];
 
-// 3匹のHP（合計10問）
-const _kEnemyHps = [3, 3, 4];
+// 3匹のHP（1+2+2=5回わざ、3問×5=計15問想定）
+const _kEnemyHps = [1, 2, 2];
 
 // 伝説・幻ポケモン 図鑑ID → 種族値合計
 const Map<int, int> _legendaryBst = {
@@ -58,6 +58,81 @@ const Map<int, int> _legendaryBst = {
   // Gen 9
   1001: 570, 1002: 570, 1003: 570, 1004: 570,
   1007: 670, 1008: 670, 1017: 550, 1024: 700,
+};
+
+// 伝説ポケモン 図鑑ID → タイプ
+const Map<int, String> _legendaryTypes = {
+  144: 'こおり', 145: 'でんき', 146: 'ほのお',
+  150: 'エスパー', 151: 'エスパー',
+  243: 'でんき', 244: 'ほのお', 245: 'みず',
+  249: 'エスパー', 250: 'ほのお', 251: 'くさ',
+  377: 'いわ', 378: 'こおり', 379: 'はがね',
+  380: 'ドラゴン', 381: 'ドラゴン',
+  382: 'みず', 383: 'じめん', 384: 'ドラゴン',
+  385: 'はがね', 386: 'エスパー',
+  480: 'エスパー', 481: 'エスパー', 482: 'エスパー',
+  483: 'ドラゴン', 484: 'ドラゴン',
+  485: 'ほのお', 486: 'ノーマル', 487: 'ゴースト',
+  488: 'エスパー', 490: 'みず', 491: 'あく',
+  492: 'くさ', 493: 'ノーマル', 494: 'ほのお',
+  638: 'はがね', 639: 'いわ', 640: 'くさ',
+  641: 'ひこう', 642: 'でんき',
+  643: 'ほのお', 644: 'でんき',
+  645: 'じめん', 646: 'こおり',
+  647: 'みず', 648: 'エスパー', 649: 'はがね',
+  716: 'フェアリー', 717: 'あく', 718: 'ドラゴン',
+  719: 'フェアリー', 720: 'エスパー', 721: 'ほのお',
+  785: 'でんき', 786: 'エスパー', 787: 'くさ', 788: 'みず',
+  791: 'はがね', 792: 'ゴースト',
+  800: 'エスパー', 801: 'フェアリー', 802: 'ゴースト',
+  807: 'でんき', 809: 'はがね',
+  888: 'フェアリー', 889: 'かくとう',
+  890: 'ドラゴン', 893: 'あく',
+  894: 'でんき', 895: 'ドラゴン',
+  896: 'こおり', 897: 'ゴースト', 898: 'エスパー',
+  1001: 'あく', 1002: 'あく', 1003: 'あく', 1004: 'あく',
+  1007: 'ドラゴン', 1008: 'ドラゴン',
+  1017: 'くさ', 1024: 'ノーマル',
+};
+
+// タイプ → わざ名
+const Map<String, String> _typeMoves = {
+  'ほのお':   'かえんほうしゃ',
+  'みず':     'なみのり',
+  'くさ':     'ソーラービーム',
+  'でんき':   'かみなり',
+  'こおり':   'れいとうビーム',
+  'かくとう': 'インファイト',
+  'エスパー': 'サイコキネシス',
+  'ドラゴン': 'りゅうせいぐん',
+  'あく':     'あくのはどう',
+  'はがね':   'アイアンテール',
+  'フェアリー':'ムーンフォース',
+  'ノーマル': 'はかいこうせん',
+  'いわ':     'ストーンエッジ',
+  'じめん':   'じしん',
+  'ひこう':   'ぼうふう',
+  'ゴースト': 'シャドーボール',
+};
+
+// タイプ → カラー
+const Map<String, Color> _typeColors = {
+  'ほのお':   Color(0xFFFF6B35),
+  'みず':     Color(0xFF4488FF),
+  'くさ':     Color(0xFF4CAF50),
+  'でんき':   Color(0xFFF1C40F),
+  'こおり':   Color(0xFF7FC8E8),
+  'かくとう': Color(0xFFBF360C),
+  'エスパー': Color(0xFFE91E8C),
+  'ドラゴン': Color(0xFF4527A0),
+  'あく':     Color(0xFF424242),
+  'はがね':   Color(0xFF78909C),
+  'フェアリー':Color(0xFFE91E63),
+  'ノーマル': Color(0xFF9E9E9E),
+  'いわ':     Color(0xFF8D6E63),
+  'じめん':   Color(0xFFB8860B),
+  'ひこう':   Color(0xFF64B5F6),
+  'ゴースト': Color(0xFF7B1FA2),
 };
 
 class _Quiz {
@@ -119,6 +194,9 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
       .toList();
 
   int get _playerBst => _legendaryBst[_playerBattlePokemon?.pokedexId] ?? 600;
+  String get _playerType => _legendaryTypes[_playerBattlePokemon?.pokedexId] ?? 'ノーマル';
+  String get _playerMove => _typeMoves[_playerType] ?? 'とくぎ';
+  Color get _playerTypeColor => _typeColors[_playerType] ?? const Color(0xFF9E9E9E);
 
   void _pickPlayerBattlePokemon() {
     final pool = _legendaryPool;
@@ -279,8 +357,7 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
       drillCorrectCount++;
       _totalCorrect++;
       setState(() => _powerLevel = (_powerLevel + 1).clamp(0, 3));
-      _triggerHit();
-      Future.delayed(const Duration(milliseconds: 700), () => _applyDamage());
+      Future.delayed(const Duration(milliseconds: 700), _nextQuestion);
     } else {
       Future.delayed(const Duration(milliseconds: 900), _nextQuestion);
     }
@@ -290,7 +367,7 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
     if (_powerLevel < 3 || _enemyFainting) return;
     setState(() => _powerLevel = 0);
     _triggerHit(isSpecial: true);
-    Future.delayed(const Duration(milliseconds: 700), () => _applyDamage(bonus: 1));
+    Future.delayed(const Duration(milliseconds: 700), _applyDamage);
   }
 
   Future<void> _triggerHit({bool isSpecial = false}) async {
@@ -299,9 +376,9 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
     if (mounted) setState(() { _enemyHit = false; _specialHit = false; });
   }
 
-  void _applyDamage({int bonus = 0}) {
+  void _applyDamage() {
     if (!mounted) return;
-    final newHp = (_enemyHp - 1 - bonus).clamp(0, 99);
+    final newHp = (_enemyHp - 1).clamp(0, 99);
     setState(() => _enemyHp = newHp);
     if (newHp <= 0) {
       setState(() => _enemyFainting = true);
@@ -435,13 +512,19 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
                                 isFainting: _enemyFainting,
                                 playerPokemon: _playerBattlePokemon,
                                 playerBst: _playerBst,
+                                playerMove: _playerMove,
+                                typeColor: _playerTypeColor,
                                 powerLevel: _powerLevel,
                               ),
                             ),
                             Expanded(
                               flex: 6,
                               child: _powerLevel >= 3
-                                  ? _SpecialButton(onTap: _useSpecial)
+                                  ? _SpecialButton(
+                                  moveName: _playerMove,
+                                  typeColor: _playerTypeColor,
+                                  onTap: _useSpecial,
+                                )
                                   : Padding(
                                       padding: const EdgeInsets.fromLTRB(
                                           16, 12, 24, 16),
@@ -613,6 +696,8 @@ class _BattleScene extends StatelessWidget {
   final bool isSpecialHit;
   final PokemonEntry? playerPokemon;
   final int playerBst;
+  final String playerMove;
+  final Color typeColor;
   final int powerLevel; // 0〜3 (3 = とくぎ発動)
 
   const _BattleScene({
@@ -625,6 +710,8 @@ class _BattleScene extends StatelessWidget {
     required this.isFainting,
     this.playerPokemon,
     required this.playerBst,
+    required this.playerMove,
+    required this.typeColor,
     required this.powerLevel,
   });
 
@@ -797,8 +884,9 @@ class _BattleScene extends StatelessWidget {
                         // ─ とくぎゲージ ─
                         Row(
                           children: [
-                            const Text('とくぎ ',
-                                style: TextStyle(fontSize: 10, color: Colors.white70)),
+                            Text(playerMove,
+                                style: const TextStyle(fontSize: 10, color: Colors.white70)),
+                            const SizedBox(width: 4),
                             for (int i = 0; i < 3; i++)
                               Container(
                                 width: 18,
@@ -806,16 +894,13 @@ class _BattleScene extends StatelessWidget {
                                 margin: const EdgeInsets.only(right: 3),
                                 decoration: BoxDecoration(
                                   color: i < powerLevel
-                                      ? (powerLevel == 3
-                                          ? const Color(0xFFF1C40F)
-                                          : const Color(0xFFE67E22))
+                                      ? typeColor
                                       : Colors.white30,
                                   borderRadius: BorderRadius.circular(3),
                                 ),
                               ),
                             if (powerLevel == 3)
-                              const Text(' ⚡',
-                                  style: TextStyle(fontSize: 13)),
+                              const Text(' ⚡', style: TextStyle(fontSize: 13)),
                           ],
                         ),
                       ],
@@ -957,8 +1042,15 @@ class _QuestionPanel extends StatelessWidget {
 // ─── とくぎボタン ─────────────────────────────────────────────────────────────────
 
 class _SpecialButton extends StatelessWidget {
+  final String moveName;
+  final Color typeColor;
   final VoidCallback onTap;
-  const _SpecialButton({required this.onTap});
+
+  const _SpecialButton({
+    required this.moveName,
+    required this.typeColor,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -981,19 +1073,19 @@ class _SpecialButton extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 22),
               decoration: BoxDecoration(
-                color: const Color(0xFFF1C40F),
+                color: typeColor,
                 borderRadius: BorderRadius.circular(40),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFF1C40F).withValues(alpha: 0.55),
+                    color: typeColor.withValues(alpha: 0.55),
                     blurRadius: 24,
                     spreadRadius: 4,
                   ),
                 ],
               ),
-              child: const Text(
-                '⚡ わざを だす！',
-                style: TextStyle(
+              child: Text(
+                '⚡ $moveName！',
+                style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
