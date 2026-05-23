@@ -135,17 +135,65 @@ const Map<String, Color> _typeColors = {
   'ゴースト': Color(0xFF7B1FA2),
 };
 
+// こくご問題データ ─────────────────────────────────────────────────────────────
+
+// 反対語: (もとのことば, はんたい)
+const List<(String, String)> _hantaigoData = [
+  ('おおきい', 'ちいさい'), ('ながい', 'みじかい'), ('はやい', 'おそい'),
+  ('あかるい', 'くらい'),  ('あつい', 'さむい'),   ('あたらしい', 'ふるい'),
+  ('たかい', 'ひくい'),   ('かるい', 'おもい'),   ('おおい', 'すくない'),
+  ('うえ', 'した'),       ('みぎ', 'ひだり'),     ('まえ', 'うしろ'),
+  ('すき', 'きらい'),     ('いい', 'わるい'),     ('ひろい', 'せまい'),
+];
+
+// なかまはずれ: ([仲間3つ], はずれ)
+const List<(List<String>, String)> _nakamahazureData = [
+  (['りんご', 'みかん', 'もも'], 'いぬ'),
+  (['いぬ', 'ねこ', 'うし'], 'もも'),
+  (['あか', 'あお', 'きいろ'], 'ねこ'),
+  (['はる', 'なつ', 'あき'], 'いぬ'),
+  (['ぱん', 'すし', 'うどん'], 'いぬ'),
+  (['て', 'あし', 'め'], 'りんご'),
+  (['でんしゃ', 'バス', 'くるま'], 'もも'),
+  (['まる', 'さんかく', 'しかく'], 'いぬ'),
+  (['いち', 'に', 'さん'], 'いぬ'),
+  (['えんぴつ', 'けしゴム', 'ノート'], 'いぬ'),
+  (['ぞう', 'きりん', 'らいおん'], 'りんご'),
+  (['つくえ', 'いす', 'たな'], 'ねこ'),
+];
+
+// 語頭文字: (頭文字, 正解ことば, [まちがい3つ])
+const List<(String, String, List<String>)> _gotouMojiData = [
+  ('か', 'かえる', ['いぬ', 'ねこ', 'うさぎ']),
+  ('い', 'いぬ',   ['りんご', 'ねこ', 'もも']),
+  ('は', 'はな',   ['ねこ', 'りんご', 'うし']),
+  ('さ', 'さかな', ['いぬ', 'ねこ', 'うし']),
+  ('み', 'みかん', ['いぬ', 'りんご', 'ねこ']),
+  ('り', 'りんご', ['みかん', 'いぬ', 'ねこ']),
+  ('つ', 'つき',   ['はな', 'うみ', 'やま']),
+  ('く', 'くも',   ['はな', 'つき', 'やま']),
+  ('ね', 'ねこ',   ['いぬ', 'はな', 'うし']),
+  ('や', 'やま',   ['うみ', 'かわ', 'そら']),
+  ('う', 'うみ',   ['やま', 'かわ', 'そら']),
+  ('た', 'たこ',   ['いか', 'かに', 'えび']),
+  ('わ', 'わに',   ['へび', 'かえる', 'ねこ']),
+  ('ひ', 'ひよこ', ['いぬ', 'ねこ', 'うし']),
+  ('ほ', 'ほし',   ['つき', 'くも', 'やま']),
+];
+
 class _Quiz {
   final String displayBig;
   final String prompt;
   final List<String> choices;
   final int correctIndex;
+  final double choiceFontSize;
 
   const _Quiz({
     required this.displayBig,
     required this.prompt,
     required this.choices,
     required this.correctIndex,
+    this.choiceFontSize = 36,
   });
 }
 
@@ -172,12 +220,14 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
   int _zonePenalty = 0;
   int _powerLevel = 0;      // 0〜2 チャージ中、3 = とくぎ発動可能
   bool _specialHit = false; // とくぎ発動時の黄色フラッシュ
+  bool _rewardVisible = true; // ゲットできるポケモンを表示するか
   PokemonEntry? _playerBattlePokemon; // バトルに出す伝説ポケモン（報酬とは別）
 
   @override
   void initState() {
     super.initState();
     drillInitPokemonState();
+    _rewardVisible = StorageService.loadBattleRewardVisible();
     drillPickPendingPokemon(); // ゲットできる報酬ポケモン（ランダム）
     _pickPlayerBattlePokemon(); // バトルに出す伝説ポケモン
     _enemies = _pickEnemies();
@@ -216,16 +266,19 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
 
   // Zone 0 (battle 1): hiraToKata, add, sub (3 types)
   // Zone 1 (battle 2): +kataToHira (4 types)
-  // Zone 2 (battle 3): +clock (5 types)
+  // Zone 2 (battle 3): +hardMath, 反対語, なかまはずれ, 語頭文字 (8 types)
   _Quiz _generateQuiz(int zone) {
-    final typeCount = zone == 0 ? 3 : zone == 1 ? 4 : 5;
+    final typeCount = zone == 0 ? 3 : zone == 1 ? 4 : 8;
     final type = drillRandom.nextInt(typeCount);
     return switch (type) {
       0 => _generateHiraToKata(),
       1 => _generateAddition(zone),
       2 => _generateSubtraction(zone),
       3 => _generateKataToHira(),
-      _ => _generateClock(),
+      4 => drillRandom.nextBool() ? _generateAddTens() : _generateAddTriple(),
+      5 => _generateHantaigo(),
+      6 => _generateNakamahazure(),
+      _ => _generateGotouMoji(),
     };
   }
 
@@ -320,27 +373,96 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
     );
   }
 
-  _Quiz _generateClock() {
-    final hour = drillRandom.nextInt(12) + 1;
-    const minuteOpts = [0, 15, 30, 45];
-    final minute = minuteOpts[drillRandom.nextInt(minuteOpts.length)];
-    String label(int h, int m) => m == 0 ? '$h じ' : '$h じ $m ふん';
-    final correct = label(hour, minute);
-    final wrongs = <String>{};
+  // 二桁同士（一の桁がゼロ）の足し算: 10+20, 30+40 など
+  _Quiz _generateAddTens() {
+    int a, b;
+    do {
+      a = (drillRandom.nextInt(8) + 1) * 10; // 10〜80
+      b = (drillRandom.nextInt(8) + 1) * 10; // 10〜80
+    } while (a + b > 100);
+    final answer = a + b;
+    final wrongs = <int>{};
     var attempts = 0;
     while (wrongs.length < 3 && attempts < 50) {
       attempts++;
-      final h = drillRandom.nextInt(12) + 1;
-      final m = minuteOpts[drillRandom.nextInt(minuteOpts.length)];
-      final w = label(h, m);
-      if (w != correct) wrongs.add(w);
+      final w = answer + (drillRandom.nextInt(5) - 2) * 10;
+      if (w != answer && w > 0 && w <= 100) wrongs.add(w);
     }
-    final choices = [correct, ...wrongs.take(3)]..shuffle(drillRandom);
+    final choices = ([answer, ...wrongs.take(3)]..shuffle(drillRandom))
+        .map((n) => n.toString())
+        .toList();
     return _Quiz(
-      displayBig: '$hour:${minute.toString().padLeft(2, '0')}',
-      prompt: 'なんじ なんぷん？',
+      displayBig: '$a ＋ $b',
+      prompt: 'こたえは いくつ？',
+      choices: choices,
+      correctIndex: choices.indexOf(answer.toString()),
+    );
+  }
+
+  // 一桁3つの足し算: 1+2+3, 2+4+5 など
+  _Quiz _generateAddTriple() {
+    final a = drillRandom.nextInt(5) + 1; // 1〜5
+    final b = drillRandom.nextInt(5) + 1;
+    final c = drillRandom.nextInt(5) + 1;
+    final answer = a + b + c;
+    final wrongs = <int>{};
+    var attempts = 0;
+    while (wrongs.length < 3 && attempts < 50) {
+      attempts++;
+      final w = answer + drillRandom.nextInt(7) - 3;
+      if (w != answer && w > 0) wrongs.add(w);
+    }
+    final choices = ([answer, ...wrongs.take(3)]..shuffle(drillRandom))
+        .map((n) => n.toString())
+        .toList();
+    return _Quiz(
+      displayBig: '$a ＋ $b ＋ $c',
+      prompt: 'こたえは いくつ？',
+      choices: choices,
+      correctIndex: choices.indexOf(answer.toString()),
+    );
+  }
+
+  _Quiz _generateHantaigo() {
+    final pair = _hantaigoData[drillRandom.nextInt(_hantaigoData.length)];
+    final correct = pair.$2;
+    final wrongs = (_hantaigoData.toList()
+          ..removeWhere((p) => p.$2 == correct)
+          ..shuffle(drillRandom))
+        .take(3)
+        .map((p) => p.$2)
+        .toList();
+    final choices = [correct, ...wrongs]..shuffle(drillRandom);
+    return _Quiz(
+      displayBig: pair.$1,
+      prompt: 'はんたいの ことばは どれ？',
       choices: choices,
       correctIndex: choices.indexOf(correct),
+      choiceFontSize: 24,
+    );
+  }
+
+  _Quiz _generateNakamahazure() {
+    final data = _nakamahazureData[drillRandom.nextInt(_nakamahazureData.length)];
+    final choices = [...data.$1, data.$2]..shuffle(drillRandom);
+    return _Quiz(
+      displayBig: '？',
+      prompt: 'なかまでは ないのは どれ？',
+      choices: choices,
+      correctIndex: choices.indexOf(data.$2),
+      choiceFontSize: 22,
+    );
+  }
+
+  _Quiz _generateGotouMoji() {
+    final data = _gotouMojiData[drillRandom.nextInt(_gotouMojiData.length)];
+    final choices = [data.$2, ...data.$3]..shuffle(drillRandom);
+    return _Quiz(
+      displayBig: data.$1,
+      prompt: 'この もじで はじまる ことばは どれ？',
+      choices: choices,
+      correctIndex: choices.indexOf(data.$2),
+      choiceFontSize: 24,
     );
   }
 
@@ -401,17 +523,21 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
         _selectedChoice = null;
         _feedbackCorrect = false;
         _zonePenalty = 0;
-        _currentQuiz = _generateQuiz(next);
+        _currentQuiz = _generateQuiz(next >= 1 ? 2 : 0); // 2匹目から最高難易度
       });
     }
   }
+
+  // 2匹目以降は zone 2 固定、間違えると zone 1→0 に下がる
+  int get _effectiveZone =>
+      _battleIndex == 0 ? 0 : (2 - _zonePenalty).clamp(0, 2);
 
   void _nextQuestion() {
     if (!mounted) return;
     setState(() {
       _selectedChoice = null;
       _feedbackCorrect = false;
-      _currentQuiz = _generateQuiz((_battleIndex - _zonePenalty).clamp(0, 2));
+      _currentQuiz = _generateQuiz(_effectiveZone);
     });
   }
 
@@ -486,6 +612,7 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
               caughtPokemon: drillCaughtPokemon,
               shinyCaughtNames: drillShinyCaughtNames,
               onBack: () => Navigator.pop(context),
+              rewardVisible: _rewardVisible,
               pendingRewardPokemon: drillPendingRewardPokemon,
               pendingIsShiny: drillPendingIsShiny,
             ),
@@ -573,6 +700,7 @@ class _LeftPanel extends StatelessWidget {
   final List<PokemonEntry> caughtPokemon;
   final Set<String> shinyCaughtNames;
   final VoidCallback onBack;
+  final bool rewardVisible;
   final PokemonEntry? pendingRewardPokemon;
   final bool pendingIsShiny;
 
@@ -583,6 +711,7 @@ class _LeftPanel extends StatelessWidget {
     required this.caughtPokemon,
     required this.shinyCaughtNames,
     required this.onBack,
+    required this.rewardVisible,
     this.pendingRewardPokemon,
     this.pendingIsShiny = false,
   });
@@ -663,7 +792,7 @@ class _LeftPanel extends StatelessWidget {
                   }),
                 ),
                 const SizedBox(height: 12),
-                if (!showResult && pendingRewardPokemon != null)
+                if (!showResult && rewardVisible && pendingRewardPokemon != null)
                   DrillPokemonRewardPreview(
                     pokemon: pendingRewardPokemon!,
                     isShiny: pendingIsShiny,
@@ -988,7 +1117,7 @@ class _QuestionPanel extends StatelessWidget {
                           correct: quiz.choices[quiz.correctIndex],
                           selected: selected,
                           onTap: onAnswerTap,
-                          fontSize: 36,
+                          fontSize: quiz.choiceFontSize,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -998,7 +1127,7 @@ class _QuestionPanel extends StatelessWidget {
                           correct: quiz.choices[quiz.correctIndex],
                           selected: selected,
                           onTap: onAnswerTap,
-                          fontSize: 36,
+                          fontSize: quiz.choiceFontSize,
                         ),
                       ),
                     ],
@@ -1014,7 +1143,7 @@ class _QuestionPanel extends StatelessWidget {
                           correct: quiz.choices[quiz.correctIndex],
                           selected: selected,
                           onTap: onAnswerTap,
-                          fontSize: 36,
+                          fontSize: quiz.choiceFontSize,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -1024,7 +1153,7 @@ class _QuestionPanel extends StatelessWidget {
                           correct: quiz.choices[quiz.correctIndex],
                           selected: selected,
                           onTap: onAnswerTap,
-                          fontSize: 36,
+                          fontSize: quiz.choiceFontSize,
                         ),
                       ),
                     ],

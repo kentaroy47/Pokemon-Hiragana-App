@@ -24,6 +24,7 @@ const _kDrillIcons = {
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _limitEnabled = false;
   int _limitCount = 3;
+  bool _battleRewardVisible = true;
   final Map<String, List<(String, int)>> _weekData = {};
 
   @override
@@ -31,6 +32,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.initState();
     _limitEnabled = StorageService.loadDailyLimitEnabled();
     _limitCount = StorageService.loadDailyLimitCount();
+    _battleRewardVisible = StorageService.loadBattleRewardVisible();
     for (final key in _kAllDrillKeys) {
       _weekData[key] = StorageService.loadWeekSummary(key);
     }
@@ -204,6 +206,63 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ],
                           )
                         : const SizedBox.shrink(),
+                  ),
+
+                  // ─── バトル設定 ───
+                  const SizedBox(height: 24),
+                  const Divider(),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'バトル設定',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.darkText,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: AppTheme.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFEEEEEE)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Text('⚔️', style: TextStyle(fontSize: 22)),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'ゲットできるポケモンを表示',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.darkText,
+                                ),
+                              ),
+                              Text(
+                                'OFFにするとバトル中にわからない',
+                                style: TextStyle(
+                                    fontSize: 12, color: AppTheme.textGray),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: _battleRewardVisible,
+                          onChanged: (v) {
+                            setState(() => _battleRewardVisible = v);
+                            StorageService.saveBattleRewardVisible(v);
+                          },
+                          activeColor: AppTheme.blueAccent,
+                        ),
+                      ],
+                    ),
                   ),
 
                   // ─── 週間サマリ ───

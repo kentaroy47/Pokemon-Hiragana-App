@@ -19,6 +19,7 @@ const _todayDateKey = 'today_date_jst';
 const _todayCaughtKey = 'today_caught_count';
 const _drillSessionPrefix = 'today_sessions_';
 const _todayCaughtNamesKey = 'today_caught_names_list';
+const _battleRewardVisibleKey = 'battle_reward_visible';
 
 /// ブラウザの localStorage を使ったデータ永続化サービス
 class StorageService {
@@ -275,6 +276,22 @@ class StorageService {
       final existing = _localStorage.getItem(_todayCaughtNamesKey)?.toDart ?? '';
       final next = existing.isEmpty ? katakana : '$existing,$katakana';
       _localStorage.setItem(_todayCaughtNamesKey, next);
+    } catch (_) {}
+  }
+
+  // ─── バトル設定 ───────────────────────────────────────────────────────────────
+
+  static bool loadBattleRewardVisible() {
+    try {
+      final raw = _localStorage.getItem(_battleRewardVisibleKey)?.toDart;
+      if (raw == null) return true;
+      return raw == 'true';
+    } catch (_) { return true; }
+  }
+
+  static void saveBattleRewardVisible(bool value) {
+    try {
+      _localStorage.setItem(_battleRewardVisibleKey, '$value');
     } catch (_) {}
   }
 

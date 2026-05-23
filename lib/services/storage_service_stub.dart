@@ -23,4 +23,6 @@ class StorageService {
   static List<(String, int)> loadWeekSummary(String drillKey) => [];
   static List<String> loadTodayCaughtNamesList() => [];
   static void addTodayCaughtName(String katakana) {}
+  static bool loadBattleRewardVisible() => true;
+  static void saveBattleRewardVisible(bool value) {}
 }
