@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../app_theme.dart';
 import '../services/daily_stats_service.dart';
+import '../services/home_visibility_service.dart';
 import '../services/storage_service.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -25,6 +26,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _limitEnabled = false;
   int _limitCount = 3;
   bool _battleRewardVisible = true;
+  bool _showKokugoEasy = false;
+  bool _showKatakanaYomou = false;
   final Map<String, List<(String, int)>> _weekData = {};
 
   @override
@@ -33,6 +36,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _limitEnabled = StorageService.loadDailyLimitEnabled();
     _limitCount = StorageService.loadDailyLimitCount();
     _battleRewardVisible = StorageService.loadBattleRewardVisible();
+    _showKokugoEasy = StorageService.loadShowKokugoEasy();
+    _showKatakanaYomou = StorageService.loadShowKatakanaYomou();
     for (final key in _kAllDrillKeys) {
       _weekData[key] = StorageService.loadWeekSummary(key);
     }
@@ -258,6 +263,112 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           onChanged: (v) {
                             setState(() => _battleRewardVisible = v);
                             StorageService.saveBattleRewardVisible(v);
+                          },
+                          activeColor: AppTheme.blueAccent,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // ─── ホーム画面設定 ───
+                  const SizedBox(height: 24),
+                  const Divider(),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'ホーム画面のボタン',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.darkText,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'かんたんモードや読むドリルを表示するか選べます',
+                    style: TextStyle(fontSize: 13, color: AppTheme.textGray),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: AppTheme.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFEEEEEE)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Text('📖', style: TextStyle(fontSize: 22)),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'こくご（かんたん）を表示',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.darkText,
+                                ),
+                              ),
+                              Text(
+                                'かんたんなひらがな・カタカナかきモード',
+                                style: TextStyle(
+                                    fontSize: 12, color: AppTheme.textGray),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: _showKokugoEasy,
+                          onChanged: (v) {
+                            setState(() => _showKokugoEasy = v);
+                            HomeVisibilityService.setShowKokugoEasy(v);
+                          },
+                          activeColor: AppTheme.blueAccent,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: AppTheme.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFEEEEEE)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Text('🌼', style: TextStyle(fontSize: 22)),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'カタカナをよもう！を表示',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.darkText,
+                                ),
+                              ),
+                              Text(
+                                'カタカナの読みクイズモード',
+                                style: TextStyle(
+                                    fontSize: 12, color: AppTheme.textGray),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: _showKatakanaYomou,
+                          onChanged: (v) {
+                            setState(() => _showKatakanaYomou = v);
+                            HomeVisibilityService.setShowKatakanaYomou(v);
                           },
                           activeColor: AppTheme.blueAccent,
                         ),

@@ -25,4 +25,8 @@ class StorageService {
   static void addTodayCaughtName(String katakana) {}
   static bool loadBattleRewardVisible() => true;
   static void saveBattleRewardVisible(bool value) {}
+  static bool loadShowKokugoEasy() => false;
+  static void saveShowKokugoEasy(bool value) {}
+  static bool loadShowKatakanaYomou() => false;
+  static void saveShowKatakanaYomou(bool value) {}
 }

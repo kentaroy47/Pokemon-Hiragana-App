@@ -16,6 +16,7 @@ import 'pokemon_reading_quiz_screen.dart';
 import '../widgets/pokedex_dialog.dart';
 import '../services/analytics_service.dart';
 import '../services/daily_stats_service.dart';
+import '../services/home_visibility_service.dart';
 import '../services/storage_service.dart';
 import '../services/pokemon_repository.dart';
 
@@ -192,57 +193,36 @@ class _RightPanel extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // こくご button
+          // ひらがなをかこう！（むずかしい、常に表示）
           _MenuButton(
-            emoji: '📖',
-            label: 'こくご',
-            color: palette.primary,
-            onTap: () async {
-              final result = await showDialog<_KokugoMode>(
-                context: context,
-                builder: (_) => const _KokugoModeDialog(),
+            emoji: '🔥',
+            label: 'ひらがなをかこう！',
+            color: const Color(0xFF6A1B9A),
+            onTap: () {
+              AnalyticsService.logScreenView('hiragana_hard');
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const PokemonScreen(mode: PokemonPlayMode.hiraganaHard),
+                ),
               );
-              if (result == null) return;
-              if (!context.mounted) return;
-              AnalyticsService.logKokugoModeSelected(result.name);
-              switch (result) {
-                case _KokugoMode.hiragana:
-                  AnalyticsService.logScreenView('hiragana');
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          const PokemonScreen(mode: PokemonPlayMode.hiragana),
-                    ),
-                  );
-                case _KokugoMode.hiraganaHard:
-                  AnalyticsService.logScreenView('hiragana_hard');
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          const PokemonScreen(mode: PokemonPlayMode.hiraganaHard),
-                    ),
-                  );
-                case _KokugoMode.katakana:
-                  AnalyticsService.logScreenView('katakana');
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          const PokemonScreen(mode: PokemonPlayMode.katakana),
-                    ),
-                  );
-                case _KokugoMode.katakanaHard:
-                  AnalyticsService.logScreenView('katakana_hard');
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          const PokemonScreen(mode: PokemonPlayMode.katakanaHard),
-                    ),
-                  );
-              }
+            },
+          ),
+          const SizedBox(height: 12),
+
+          // カタカナをかこう！（むずかしい、常に表示）
+          _MenuButton(
+            emoji: '💪',
+            label: 'カタカナをかこう！',
+            color: const Color(0xFFE65100),
+            onTap: () {
+              AnalyticsService.logScreenView('katakana_hard');
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const PokemonScreen(mode: PokemonPlayMode.katakanaHard),
+                ),
+              );
             },
           ),
           const SizedBox(height: 12),
@@ -261,39 +241,7 @@ class _RightPanel extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          // カタカナをよもう！ button
-          _MenuButton(
-            emoji: '🌼',
-            label: 'カタカナをよもう！',
-            color: const Color(0xFFFF9F43),
-            onTap: () async {
-              final result = await showDialog<_KatakanaMode>(
-                context: context,
-                builder: (_) => const _KatakanaModeDialog(),
-              );
-              if (result == null) return;
-              if (!context.mounted) return;
-              switch (result) {
-                case _KatakanaMode.random:
-                  AnalyticsService.logScreenView('katakana_quiz');
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const KatakanaQuizScreen()));
-                case _KatakanaMode.pokemonHiragana:
-                  Navigator.push(context,
-                      MaterialPageRoute(
-                          builder: (_) => const PokemonReadingQuizScreen(
-                              mode: PokemonReadingMode.hiragana)));
-                case _KatakanaMode.pokemonKatakana:
-                  Navigator.push(context,
-                      MaterialPageRoute(
-                          builder: (_) => const PokemonReadingQuizScreen(
-                              mode: PokemonReadingMode.katakana)));
-              }
-            },
-          ),
-          const SizedBox(height: 12),
-
-          // 時計をよもう！ button
+          // とけいをよもう！ button
           _MenuButton(
             emoji: '🕐',
             label: 'とけいをよもう！',
@@ -306,6 +254,96 @@ class _RightPanel extends StatelessWidget {
               );
             },
           ),
+          const SizedBox(height: 12),
+
+          // カタカナをよもう！（デフォルト非表示）
+          ValueListenableBuilder<bool>(
+            valueListenable: HomeVisibilityService.showKatakanaYomouNotifier,
+            builder: (context, show, _) {
+              if (!show) return const SizedBox.shrink();
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _MenuButton(
+                    emoji: '🌼',
+                    label: 'カタカナをよもう！',
+                    color: const Color(0xFFFF9F43),
+                    onTap: () async {
+                      final result = await showDialog<_KatakanaMode>(
+                        context: context,
+                        builder: (_) => const _KatakanaModeDialog(),
+                      );
+                      if (result == null) return;
+                      if (!context.mounted) return;
+                      switch (result) {
+                        case _KatakanaMode.random:
+                          AnalyticsService.logScreenView('katakana_quiz');
+                          Navigator.push(context,
+                              MaterialPageRoute(builder: (_) => const KatakanaQuizScreen()));
+                        case _KatakanaMode.pokemonHiragana:
+                          Navigator.push(context,
+                              MaterialPageRoute(
+                                  builder: (_) => const PokemonReadingQuizScreen(
+                                      mode: PokemonReadingMode.hiragana)));
+                        case _KatakanaMode.pokemonKatakana:
+                          Navigator.push(context,
+                              MaterialPageRoute(
+                                  builder: (_) => const PokemonReadingQuizScreen(
+                                      mode: PokemonReadingMode.katakana)));
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              );
+            },
+          ),
+
+          // こくご（かんたん）（デフォルト非表示）
+          ValueListenableBuilder<bool>(
+            valueListenable: HomeVisibilityService.showKokugoEasyNotifier,
+            builder: (context, show, _) {
+              if (!show) return const SizedBox.shrink();
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _MenuButton(
+                    emoji: '📖',
+                    label: 'こくご（かんたん）',
+                    color: palette.primary,
+                    onTap: () async {
+                      final result = await showDialog<_KokugoEasyMode>(
+                        context: context,
+                        builder: (_) => const _KokugoEasyModeDialog(),
+                      );
+                      if (result == null) return;
+                      if (!context.mounted) return;
+                      switch (result) {
+                        case _KokugoEasyMode.hiragana:
+                          AnalyticsService.logScreenView('hiragana');
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const PokemonScreen(mode: PokemonPlayMode.hiragana),
+                            ),
+                          );
+                        case _KokugoEasyMode.katakana:
+                          AnalyticsService.logScreenView('katakana');
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const PokemonScreen(mode: PokemonPlayMode.katakana),
+                            ),
+                          );
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              );
+            },
+          ),
+
           const SizedBox(height: 8),
 
           // ゲームモード（カード・スゴロク・バトル）横並び
@@ -534,14 +572,14 @@ class _GameButton extends StatelessWidget {
   }
 }
 
-// ─── こくごモード ──────────────────────────────────────────────────────────────
+// ─── こくごモード（かんたん） ──────────────────────────────────────────────────
 
-enum _KokugoMode { hiragana, hiraganaHard, katakana, katakanaHard }
+enum _KokugoEasyMode { hiragana, katakana }
 
 enum _KatakanaMode { random, pokemonHiragana, pokemonKatakana }
 
-class _KokugoModeDialog extends StatelessWidget {
-  const _KokugoModeDialog();
+class _KokugoEasyModeDialog extends StatelessWidget {
+  const _KokugoEasyModeDialog();
 
   @override
   Widget build(BuildContext context) {
@@ -558,33 +596,17 @@ class _KokugoModeDialog extends StatelessWidget {
           _ModeOption(
             emoji: '🌸',
             label: 'ひらがな',
-            description: 'ポケモンのなまえをなぞる',
+            description: 'ポケモンのなまえをなぞる（かんたん）',
             color: AppTheme.pinkAccent,
-            onTap: () => Navigator.pop(context, _KokugoMode.hiragana),
-          ),
-          const SizedBox(height: 8),
-          _ModeOption(
-            emoji: '🔥',
-            label: 'むずかしいひらがな',
-            description: 'ポケモンのなまえをなぞる',
-            color: const Color(0xFF6A1B9A),
-            onTap: () => Navigator.pop(context, _KokugoMode.hiraganaHard),
+            onTap: () => Navigator.pop(context, _KokugoEasyMode.hiragana),
           ),
           const SizedBox(height: 8),
           _ModeOption(
             emoji: '🌼',
             label: 'カタカナ',
-            description: 'ポケモンのなまえをなぞる',
+            description: 'ポケモンのなまえをなぞる（かんたん）',
             color: AppTheme.blueAccent,
-            onTap: () => Navigator.pop(context, _KokugoMode.katakana),
-          ),
-          const SizedBox(height: 8),
-          _ModeOption(
-            emoji: '💪',
-            label: 'むずかしいカタカナ',
-            description: 'ポケモンのなまえをなぞる',
-            color: const Color(0xFFE65100),
-            onTap: () => Navigator.pop(context, _KokugoMode.katakanaHard),
+            onTap: () => Navigator.pop(context, _KokugoEasyMode.katakana),
           ),
         ],
       ),

@@ -20,6 +20,8 @@ const _todayCaughtKey = 'today_caught_count';
 const _drillSessionPrefix = 'today_sessions_';
 const _todayCaughtNamesKey = 'today_caught_names_list';
 const _battleRewardVisibleKey = 'battle_reward_visible';
+const _showKokugoEasyKey = 'show_kokugo_easy';
+const _showKatakanaYomouKey = 'show_katakana_yomou';
 
 /// ブラウザの localStorage を使ったデータ永続化サービス
 class StorageService {
@@ -293,6 +295,32 @@ class StorageService {
     try {
       _localStorage.setItem(_battleRewardVisibleKey, '$value');
     } catch (_) {}
+  }
+
+  // ─── ホーム画面表示設定 ───────────────────────────────────────────────────────
+
+  static bool loadShowKokugoEasy() {
+    try {
+      final raw = _localStorage.getItem(_showKokugoEasyKey)?.toDart;
+      if (raw == null) return false;
+      return raw == 'true';
+    } catch (_) { return false; }
+  }
+
+  static void saveShowKokugoEasy(bool value) {
+    try { _localStorage.setItem(_showKokugoEasyKey, '$value'); } catch (_) {}
+  }
+
+  static bool loadShowKatakanaYomou() {
+    try {
+      final raw = _localStorage.getItem(_showKatakanaYomouKey)?.toDart;
+      if (raw == null) return false;
+      return raw == 'true';
+    } catch (_) { return false; }
+  }
+
+  static void saveShowKatakanaYomou(bool value) {
+    try { _localStorage.setItem(_showKatakanaYomouKey, '$value'); } catch (_) {}
   }
 
   /// 今日の指定モードのプレイ回数を1増やす

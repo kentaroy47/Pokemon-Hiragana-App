@@ -185,6 +185,8 @@ class _PokemonScreenState extends State<PokemonScreen> {
                         currentIndex: _charIndex,
                         completedCount: _scores.length,
                         pokemonColor: _pokemon.color,
+                        isHard: widget.mode.isHard,
+                        showHint: _showHint,
                       ),
                       const SizedBox(height: 6),
                       Row(
@@ -451,12 +453,16 @@ class _CharProgressRow extends StatelessWidget {
   final int currentIndex;
   final int completedCount;
   final Color pokemonColor;
+  final bool isHard;
+  final bool showHint;
 
   const _CharProgressRow({
     required this.chars,
     required this.currentIndex,
     required this.completedCount,
     required this.pokemonColor,
+    this.isHard = false,
+    this.showHint = false,
   });
 
   @override
@@ -466,6 +472,8 @@ class _CharProgressRow extends StatelessWidget {
       children: List.generate(chars.length, (i) {
         final isDone = i < completedCount;
         final isCurrent = i == currentIndex && !isDone;
+        // Hard mode: hide not-yet-done characters unless hint is active
+        final hidden = isHard && !isDone && !showHint;
 
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -491,16 +499,18 @@ class _CharProgressRow extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                chars[i],
+                hidden ? '？' : chars[i],
                 style: TextStyle(
                   fontSize: 30,
                   fontWeight:
                       isCurrent ? FontWeight.bold : FontWeight.normal,
                   color: isDone
                       ? AppTheme.greenStroke
-                      : isCurrent
-                          ? pokemonColor
-                          : AppTheme.textGray,
+                      : hidden
+                          ? AppTheme.textGray.withValues(alpha: 0.4)
+                          : isCurrent
+                              ? pokemonColor
+                              : AppTheme.textGray,
                   height: 1.0,
                 ),
               ),
