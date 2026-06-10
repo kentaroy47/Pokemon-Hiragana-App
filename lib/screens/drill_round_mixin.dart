@@ -5,6 +5,7 @@ import '../services/pokemon_repository.dart';
 import '../services/storage_service.dart';
 import '../services/sound_service.dart';
 import '../services/daily_stats_service.dart';
+import '../services/home_bonus_service.dart';
 
 // ─── ドリル画面 共通ロジック Mixin ────────────────────────────────────────────
 /// clock / math / katakana_quiz の3画面で共通するポケモン報酬・状態管理ロジック
@@ -46,9 +47,11 @@ mixin DrillRoundMixin<T extends StatefulWidget> on State<T> {
     drillPendingIsShiny = drillRollShiny();
   }
 
-  /// 色違いかどうかを抽選する。デイリーボーナス枠が残っていれば確率アップ。
-  /// 通常20% → ボーナス時40%。
+  /// 色違いかどうかを抽選する。
+  /// ホームボーナス > デイリーボーナス > 通常（20%）の優先順で判定。
   bool drillRollShiny() {
+    final bonusRate = HomeBonusService.tryConsumeRate();
+    if (bonusRate != null) return drillRandom.nextDouble() < bonusRate;
     final boosted = DailyStatsService.consumeShinyBonus();
     return drillRandom.nextDouble() < (boosted ? 0.4 : 0.2);
   }

@@ -33,4 +33,8 @@ class StorageService {
   static int recordPlayStreak() => 0;
   static int shinyBonusRemaining() => 0;
   static bool useShinyBonusDraw() => false;
+  static String loadHomeBonusType() => '';
+  static void saveHomeBonusType(String value) {}
+  static int loadHomeBonusRemaining() => 0;
+  static void saveHomeBonusRemaining(int value) {}
 }

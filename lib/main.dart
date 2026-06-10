@@ -3,8 +3,12 @@ import 'package:flutter/services.dart';
 import 'app_palette.dart';
 import 'screens/home_screen.dart';
 import 'services/daily_stats_service.dart';
+import 'services/home_bonus_service.dart';
 import 'services/pokemon_repository.dart';
 import 'services/storage_service.dart';
+
+/// ホーム画面への復帰を検知するためのナビゲーターオブザーバー
+final appRouteObserver = RouteObserver<ModalRoute<void>>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,6 +18,7 @@ void main() async {
   ]);
   await PokemonRepository.init();
   DailyStatsService.init();
+  HomeBonusService.init();
 
   // 保存済みパレットを復元
   final savedId = StorageService.loadPaletteId();
@@ -36,6 +41,7 @@ class HiraganaApp extends StatelessWidget {
           title: 'ひらがな れんしゅう',
           debugShowCheckedModeBanner: false,
           theme: buildTheme(palette),
+          navigatorObservers: [appRouteObserver],
           home: const HomeScreen(),
         );
       },

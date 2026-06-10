@@ -1,4 +1,5 @@
 import 'dart:js_interop';
+import 'dart:math' as math;
 
 extension type _JSStorage(JSObject _) implements JSObject {
   external JSString? getItem(String key);
@@ -25,8 +26,8 @@ const _showKatakanaYomouKey = 'show_katakana_yomou';
 const _streakCountKey = 'streak_count';
 const _streakLastDateKey = 'streak_last_date';
 
-/// 1日の色違いボーナス枠（最初のN回だけ色違い率アップ）
-const _shinyBonusCap = 2;
+/// 色違いボーナスデーのキープレフィックス（YYYY-MM-DD を後置）
+const _shinyBonusDayPrefix = 'sb_day_';
 
 /// ブラウザの localStorage を使ったデータ永続化サービス
 class StorageService {
@@ -334,6 +335,24 @@ class StorageService {
     try { _localStorage.setItem(_showKatakanaYomouKey, '$value'); } catch (_) {}
   }
 
+  // ─── ホームボーナス ───────────────────────────────────────────────────────────
+
+  static String loadHomeBonusType() {
+    try { return _localStorage.getItem('home_bonus_type')?.toDart ?? ''; } catch (_) { return ''; }
+  }
+
+  static void saveHomeBonusType(String value) {
+    try { _localStorage.setItem('home_bonus_type', value); } catch (_) {}
+  }
+
+  static int loadHomeBonusRemaining() {
+    try { return int.tryParse(_localStorage.getItem('home_bonus_remain')?.toDart ?? '') ?? 0; } catch (_) { return 0; }
+  }
+
+  static void saveHomeBonusRemaining(int value) {
+    try { _localStorage.setItem('home_bonus_remain', '$value'); } catch (_) {}
+  }
+
   /// 今日の指定モードのプレイ回数を1増やす
   static void incrementDailyPlays(String mode) {
     try {
@@ -381,29 +400,24 @@ class StorageService {
 
   // ─── 色違いデイリーボーナス ───────────────────────────────────────────────────
 
-  /// 今日まだ残っている色違いボーナス枠の数（バッジ表示用）
-  static int shinyBonusRemaining() {
+  /// 今日がボーナスデーかどうかを返す。
+  /// 初回アクセス時にランダム（60%）で決定し localStorage に保存する。
+  static bool _isBonusDay() {
     try {
-      final used =
-          int.tryParse(_localStorage.getItem('sb_used_${_jstDateString()}')?.toDart ?? '') ??
-              0;
-      final remain = _shinyBonusCap - used;
-      return remain < 0 ? 0 : remain;
-    } catch (_) {
-      return 0;
-    }
-  }
-
-  /// ボーナス枠が残っていれば1消費して true（=色違い率アップ対象）を返す。
-  static bool useShinyBonusDraw() {
-    try {
-      final key = 'sb_used_${_jstDateString()}';
-      final used = int.tryParse(_localStorage.getItem(key)?.toDart ?? '') ?? 0;
-      if (used >= _shinyBonusCap) return false;
-      _localStorage.setItem(key, '${used + 1}');
-      return true;
+      final key = '$_shinyBonusDayPrefix${_jstDateString()}';
+      final stored = _localStorage.getItem(key)?.toDart;
+      if (stored != null) return stored == 'true';
+      final isBonus = math.Random().nextDouble() < 0.6;
+      _localStorage.setItem(key, isBonus ? 'true' : 'false');
+      return isBonus;
     } catch (_) {
       return false;
     }
   }
+
+  /// ボーナスデーなら 1、そうでなければ 0 を返す（バッジ表示用）。
+  static int shinyBonusRemaining() => _isBonusDay() ? 1 : 0;
+
+  /// ボーナスデーなら true（=色違い率アップ）。消費しない。
+  static bool useShinyBonusDraw() => _isBonusDay();
 }

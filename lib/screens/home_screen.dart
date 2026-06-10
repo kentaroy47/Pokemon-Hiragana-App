@@ -16,9 +16,11 @@ import 'pokemon_reading_quiz_screen.dart';
 import '../widgets/pokedex_dialog.dart';
 import '../services/analytics_service.dart';
 import '../services/daily_stats_service.dart';
+import '../services/home_bonus_service.dart';
 import '../services/home_visibility_service.dart';
 import '../services/storage_service.dart';
 import '../services/pokemon_repository.dart';
+import '../main.dart' show appRouteObserver;
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -58,7 +60,7 @@ class _LeftPanel extends StatefulWidget {
   State<_LeftPanel> createState() => _LeftPanelState();
 }
 
-class _LeftPanelState extends State<_LeftPanel> {
+class _LeftPanelState extends State<_LeftPanel> with RouteAware {
   PokemonEntry? _pokemon;
   bool _isShiny = false;
 
@@ -71,6 +73,27 @@ class _LeftPanelState extends State<_LeftPanel> {
       _pokemon = pool[rng.nextInt(pool.length)];
       _isShiny = rng.nextDouble() < 0.2;
     }
+    // 最初の表示時にボーナスを抽選
+    HomeBonusService.rollBonus();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != null) appRouteObserver.subscribe(this, route);
+  }
+
+  @override
+  void dispose() {
+    appRouteObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    // ドリル画面から戻るたびにボーナス抽選
+    HomeBonusService.rollBonus();
   }
 
   @override
@@ -215,6 +238,45 @@ class _LeftPanelState extends State<_LeftPanel> {
                 '✨ きょうのボーナス！\nいろちがいチャンス',
                 textAlign: TextAlign.center,
                 style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  height: 1.4,
+                ),
+              ),
+            );
+          },
+        ),
+        // ホームボーナスバッジ（ランダム付与）
+        ValueListenableBuilder<HomeBonusState?>(
+          valueListenable: HomeBonusService.bonusNotifier,
+          builder: (context, state, _) {
+            if (state == null) return const SizedBox.shrink();
+            final (emoji, label, color) = switch (state.type) {
+              HomeBonusType.nextShiny => (
+                  '🌟',
+                  'つぎは いろちがい\nかくてい！',
+                  const Color(0xFFFFD700),
+                ),
+              HomeBonusType.shinyUp => (
+                  '⭐',
+                  'いろちがいUP！\nあと ${state.remaining} かい',
+                  const Color(0xFF9B59B6),
+                ),
+            };
+            return Container(
+              margin: const EdgeInsets.only(top: 10),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.30),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: color.withValues(alpha: 0.7), width: 1.5),
+              ),
+              child: Text(
+                '$emoji $label',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,

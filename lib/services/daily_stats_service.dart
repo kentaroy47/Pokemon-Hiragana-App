@@ -38,14 +38,9 @@ class DailyStatsService {
     streakNotifier.value = StorageService.recordPlayStreak();
   }
 
-  /// 報酬抽選1回分。ボーナス枠が残っていれば消費して true（色違い率アップ）を返す。
-  static bool consumeShinyBonus() {
-    final boosted = StorageService.useShinyBonusDraw();
-    if (boosted) {
-      shinyBonusNotifier.value = StorageService.shinyBonusRemaining();
-    }
-    return boosted;
-  }
+  /// 報酬抽選1回分。今日がボーナスデーなら true（色違い率アップ）を返す。
+  /// バッジは消費せず、一日中表示されたまま。
+  static bool consumeShinyBonus() => StorageService.useShinyBonusDraw();
 
   /// ポケモンをゲットしたときに呼ぶ（ストレージ保存 + 通知）
   static void incrementCaught() {
