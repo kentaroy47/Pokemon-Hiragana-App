@@ -4,6 +4,7 @@ import '../data/pokemon_data.dart';
 import '../services/pokemon_repository.dart';
 import '../services/storage_service.dart';
 import '../services/sound_service.dart';
+import '../services/daily_stats_service.dart';
 
 // ─── ドリル画面 共通ロジック Mixin ────────────────────────────────────────────
 /// clock / math / katakana_quiz の3画面で共通するポケモン報酬・状態管理ロジック
@@ -42,7 +43,14 @@ mixin DrillRoundMixin<T extends StatefulWidget> on State<T> {
     } while (idx == drillPrevPokemonIndex && pool.length > 1);
     drillPrevPokemonIndex = idx;
     drillPendingRewardPokemon = pool[idx];
-    drillPendingIsShiny = drillRandom.nextDouble() < 0.2;
+    drillPendingIsShiny = drillRollShiny();
+  }
+
+  /// 色違いかどうかを抽選する。デイリーボーナス枠が残っていれば確率アップ。
+  /// 通常20% → ボーナス時40%。
+  bool drillRollShiny() {
+    final boosted = DailyStatsService.consumeShinyBonus();
+    return drillRandom.nextDouble() < (boosted ? 0.4 : 0.2);
   }
 
   // ─── ポケモン保存 ─────────────────────────────────────────────────────────
@@ -61,6 +69,8 @@ mixin DrillRoundMixin<T extends StatefulWidget> on State<T> {
       }
       SoundService.playCatch();
     }
+    // ラウンド完了＝今日プレイした → れんぞくプレイ日数を更新
+    DailyStatsService.recordStreak();
     return reward;
   }
 

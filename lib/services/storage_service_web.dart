@@ -22,6 +22,11 @@ const _todayCaughtNamesKey = 'today_caught_names_list';
 const _battleRewardVisibleKey = 'battle_reward_visible';
 const _showKokugoEasyKey = 'show_kokugo_easy';
 const _showKatakanaYomouKey = 'show_katakana_yomou';
+const _streakCountKey = 'streak_count';
+const _streakLastDateKey = 'streak_last_date';
+
+/// 1日の色違いボーナス枠（最初のN回だけ色違い率アップ）
+const _shinyBonusCap = 2;
 
 /// ブラウザの localStorage を使ったデータ永続化サービス
 class StorageService {
@@ -80,8 +85,14 @@ class StorageService {
 
   // ─── 今日（JST）の統計 ─────────────────────────────────────────────────────
 
-  static String _jstDateString() {
-    final jst = DateTime.now().toUtc().add(const Duration(hours: 9));
+  static String _jstDateString() => _jstDateOffset(0);
+
+  /// 今日（JST）から days 日ずらした日付文字列を返す（days=-1 で昨日）
+  static String _jstDateOffset(int days) {
+    final jst = DateTime.now()
+        .toUtc()
+        .add(const Duration(hours: 9))
+        .add(Duration(days: days));
     return '${jst.year}-${jst.month.toString().padLeft(2, '0')}-${jst.day.toString().padLeft(2, '0')}';
   }
 
@@ -329,5 +340,70 @@ class StorageService {
       final current = loadDailyPlays(mode);
       _localStorage.setItem(_dailyKey(mode), '${current + 1}');
     } catch (_) {}
+  }
+
+  // ─── れんぞくプレイ（ストリーク） ─────────────────────────────────────────────
+
+  /// 現在のストリーク日数を読み込む（表示用）。
+  /// 最後のプレイが今日か昨日なら継続中、それより前なら途切れたとみなし0を返す。
+  static int loadStreakCount() {
+    try {
+      final last = _localStorage.getItem(_streakLastDateKey)?.toDart ?? '';
+      if (last.isEmpty) return 0;
+      final count =
+          int.tryParse(_localStorage.getItem(_streakCountKey)?.toDart ?? '') ??
+              0;
+      if (last == _jstDateString() || last == _jstDateOffset(-1)) return count;
+      return 0;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  /// プレイ完了時に呼ぶ。ストリークを更新して新しい日数を返す。
+  /// 同日2回目以降は据え置き、昨日プレイ済みなら+1、途切れていたら1にリセット。
+  static int recordPlayStreak() {
+    try {
+      final today = _jstDateString();
+      final last = _localStorage.getItem(_streakLastDateKey)?.toDart ?? '';
+      int count =
+          int.tryParse(_localStorage.getItem(_streakCountKey)?.toDart ?? '') ??
+              0;
+      if (last == today) return count;
+      count = (last == _jstDateOffset(-1)) ? count + 1 : 1;
+      _localStorage.setItem(_streakCountKey, '$count');
+      _localStorage.setItem(_streakLastDateKey, today);
+      return count;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  // ─── 色違いデイリーボーナス ───────────────────────────────────────────────────
+
+  /// 今日まだ残っている色違いボーナス枠の数（バッジ表示用）
+  static int shinyBonusRemaining() {
+    try {
+      final used =
+          int.tryParse(_localStorage.getItem('sb_used_${_jstDateString()}')?.toDart ?? '') ??
+              0;
+      final remain = _shinyBonusCap - used;
+      return remain < 0 ? 0 : remain;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  /// ボーナス枠が残っていれば1消費して true（=色違い率アップ対象）を返す。
+  static bool useShinyBonusDraw() {
+    try {
+      final key = 'sb_used_${_jstDateString()}';
+      final used = int.tryParse(_localStorage.getItem(key)?.toDart ?? '') ?? 0;
+      if (used >= _shinyBonusCap) return false;
+      _localStorage.setItem(key, '${used + 1}');
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 }

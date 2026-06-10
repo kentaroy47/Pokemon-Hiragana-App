@@ -67,7 +67,7 @@ class _PokemonReadingQuizScreenState extends State<PokemonReadingQuizScreen>
     _pickPokemon();
     // 今回のポケモン自体が報酬
     drillPendingRewardPokemon = _currentPokemon;
-    drillPendingIsShiny = drillRandom.nextDouble() < 0.2;
+    drillPendingIsShiny = drillRollShiny();
   }
 
   void _pickPokemon() {

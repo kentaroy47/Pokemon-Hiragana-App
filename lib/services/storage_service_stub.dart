@@ -29,4 +29,8 @@ class StorageService {
   static void saveShowKokugoEasy(bool value) {}
   static bool loadShowKatakanaYomou() => false;
   static void saveShowKatakanaYomou(bool value) {}
+  static int loadStreakCount() => 0;
+  static int recordPlayStreak() => 0;
+  static int shinyBonusRemaining() => 0;
+  static bool useShinyBonusDraw() => false;
 }

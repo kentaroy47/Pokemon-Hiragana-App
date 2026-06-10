@@ -165,6 +165,65 @@ class _LeftPanelState extends State<_LeftPanel> {
             );
           },
         ),
+        // れんぞくプレイ（ストリーク）バッジ：2日以上で表示
+        ValueListenableBuilder<int>(
+          valueListenable: DailyStatsService.streakNotifier,
+          builder: (context, streak, _) {
+            if (streak < 2) return const SizedBox.shrink();
+            return Container(
+              margin: const EdgeInsets.only(top: 10),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFD700).withValues(alpha: 0.22),
+                borderRadius: BorderRadius.circular(20),
+                border:
+                    Border.all(color: const Color(0xFFFFD700), width: 2),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('👑', style: TextStyle(fontSize: 16)),
+                  const SizedBox(width: 6),
+                  Text(
+                    '$streak にちれんぞく！',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+        // きょうのボーナス（いろちがいチャンス）バッジ
+        ValueListenableBuilder<int>(
+          valueListenable: DailyStatsService.shinyBonusNotifier,
+          builder: (context, remaining, _) {
+            if (remaining <= 0) return const SizedBox.shrink();
+            return Container(
+              margin: const EdgeInsets.only(top: 10),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppTheme.pinkAccent.withValues(alpha: 0.25),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Text(
+                '✨ きょうのボーナス！\nいろちがいチャンス',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  height: 1.4,
+                ),
+              ),
+            );
+          },
+        ),
       ],
     );
   }

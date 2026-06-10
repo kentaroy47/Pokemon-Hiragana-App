@@ -137,6 +137,7 @@ class _PokemonScreenState extends State<PokemonScreen> {
           StorageService.saveShinyCaughtNames(_shinyCaughtNames);
         }
         DailyStatsService.incrementCaught();
+        DailyStatsService.recordStreak();
         final sessions =
             DailyStatsService.incrementDrillSessions('hiragana');
         if (sessions > 0 && sessions % 5 == 0 && mounted) {

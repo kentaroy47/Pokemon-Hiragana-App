@@ -7,6 +7,12 @@ import 'storage_service.dart';
 class DailyStatsService {
   static final todayCaughtNotifier = ValueNotifier<int>(0);
 
+  /// れんぞくプレイ日数（ホームの👑バッジ用）
+  static final streakNotifier = ValueNotifier<int>(0);
+
+  /// 今日残っている色違いボーナス枠（ホームの✨バッジ用）
+  static final shinyBonusNotifier = ValueNotifier<int>(0);
+
   static const _drillKeys = ['hiragana', 'math', 'clock', 'katakana_quiz', 'memory', 'sugoroku', 'battle'];
 
   static final _drillNotifiers = <String, ValueNotifier<int>>{
@@ -20,9 +26,25 @@ class DailyStatsService {
   /// アプリ起動時にストレージから値を復元する
   static void init() {
     todayCaughtNotifier.value = StorageService.loadTodayCaughtCount();
+    streakNotifier.value = StorageService.loadStreakCount();
+    shinyBonusNotifier.value = StorageService.shinyBonusRemaining();
     for (final k in _drillKeys) {
       _drillNotifiers[k]!.value = StorageService.loadTodayDrillSessions(k);
     }
+  }
+
+  /// プレイ完了時に呼ぶ。ストリークを更新し、ホームのバッジへ反映する。
+  static void recordStreak() {
+    streakNotifier.value = StorageService.recordPlayStreak();
+  }
+
+  /// 報酬抽選1回分。ボーナス枠が残っていれば消費して true（色違い率アップ）を返す。
+  static bool consumeShinyBonus() {
+    final boosted = StorageService.useShinyBonusDraw();
+    if (boosted) {
+      shinyBonusNotifier.value = StorageService.shinyBonusRemaining();
+    }
+    return boosted;
   }
 
   /// ポケモンをゲットしたときに呼ぶ（ストレージ保存 + 通知）
