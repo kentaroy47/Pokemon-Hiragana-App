@@ -23,6 +23,7 @@ const _todayCaughtNamesKey = 'today_caught_names_list';
 const _battleRewardVisibleKey = 'battle_reward_visible';
 const _showKokugoEasyKey = 'show_kokugo_easy';
 const _showKatakanaYomouKey = 'show_katakana_yomou';
+const _showMemoryKey = 'show_memory';
 const _streakCountKey = 'streak_count';
 const _streakLastDateKey = 'streak_last_date';
 
@@ -333,6 +334,19 @@ class StorageService {
 
   static void saveShowKatakanaYomou(bool value) {
     try { _localStorage.setItem(_showKatakanaYomouKey, '$value'); } catch (_) {}
+  }
+
+  /// カードあわせの表示（デフォルト: 表示）
+  static bool loadShowMemory() {
+    try {
+      final raw = _localStorage.getItem(_showMemoryKey)?.toDart;
+      if (raw == null) return true;
+      return raw == 'true';
+    } catch (_) { return true; }
+  }
+
+  static void saveShowMemory(bool value) {
+    try { _localStorage.setItem(_showMemoryKey, '$value'); } catch (_) {}
   }
 
   // ─── ホームボーナス ───────────────────────────────────────────────────────────

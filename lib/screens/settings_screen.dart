@@ -28,6 +28,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _battleRewardVisible = true;
   bool _showKokugoEasy = false;
   bool _showKatakanaYomou = false;
+  bool _showMemory = true;
   final Map<String, List<(String, int)>> _weekData = {};
 
   @override
@@ -38,6 +39,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _battleRewardVisible = StorageService.loadBattleRewardVisible();
     _showKokugoEasy = StorageService.loadShowKokugoEasy();
     _showKatakanaYomou = StorageService.loadShowKatakanaYomou();
+    _showMemory = StorageService.loadShowMemory();
     for (final key in _kAllDrillKeys) {
       _weekData[key] = StorageService.loadWeekSummary(key);
     }
@@ -369,6 +371,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           onChanged: (v) {
                             setState(() => _showKatakanaYomou = v);
                             HomeVisibilityService.setShowKatakanaYomou(v);
+                          },
+                          activeColor: AppTheme.blueAccent,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: AppTheme.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFEEEEEE)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Text('🃏', style: TextStyle(fontSize: 22)),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'カードあわせを表示',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.darkText,
+                                ),
+                              ),
+                              Text(
+                                'おぼえてめくるカードゲーム',
+                                style: TextStyle(
+                                    fontSize: 12, color: AppTheme.textGray),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: _showMemory,
+                          onChanged: (v) {
+                            setState(() => _showMemory = v);
+                            HomeVisibilityService.setShowMemory(v);
                           },
                           activeColor: AppTheme.blueAccent,
                         ),

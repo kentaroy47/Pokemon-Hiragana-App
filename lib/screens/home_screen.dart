@@ -468,19 +468,24 @@ class _RightPanel extends StatelessWidget {
           const SizedBox(height: 8),
 
           // ゲームモード（カード・スゴロク・バトル）横並び
-          Row(
+          ValueListenableBuilder<bool>(
+            valueListenable: HomeVisibilityService.showMemoryNotifier,
+            builder: (context, showMemory, _) {
+          return Row(
             children: [
-              _GameButton(
-                emoji: '🃏',
-                label: 'カード',
-                color: const Color(0xFF6C5CE7),
-                onTap: () {
-                  AnalyticsService.logScreenView('memory');
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const MemoryScreen()));
-                },
-              ),
-              const SizedBox(width: 8),
+              if (showMemory) ...[
+                _GameButton(
+                  emoji: '🃏',
+                  label: 'カード',
+                  color: const Color(0xFF6C5CE7),
+                  onTap: () {
+                    AnalyticsService.logScreenView('memory');
+                    Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => const MemoryScreen()));
+                  },
+                ),
+                const SizedBox(width: 8),
+              ],
               _GameButton(
                 emoji: '🎲',
                 label: 'スゴロク',
@@ -503,6 +508,8 @@ class _RightPanel extends StatelessWidget {
                 },
               ),
             ],
+          );
+            },
           ),
 
           const SizedBox(height: 8),
