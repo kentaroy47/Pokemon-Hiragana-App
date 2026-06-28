@@ -319,10 +319,10 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
   }
 
   _Quiz _generateAddition(int zone) {
+    // zone 0: 繰り上がりあり（5〜19）, zone 1+: 二桁入り（10〜29）
     final (int minA, int maxA, int maxSum, int spread) = switch (zone) {
-      1 => (5, 19, 20, 5),
-      2 => (10, 29, 30, 8),
-      _ => (1, 9, 10, 3),
+      >= 1 => (10, 29, 30, 8),
+      _ => (5, 19, 20, 5),
     };
     final a = drillRandom.nextInt(maxA - minA + 1) + minA;
     final maxB = maxSum - a;
@@ -347,10 +347,10 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
   }
 
   _Quiz _generateSubtraction(int zone) {
+    // zone 0: 10〜20, zone 1+: 15〜30
     final (int minA, int maxA, int spread) = switch (zone) {
-      1 => (10, 20, 5),
-      2 => (15, 30, 8),
-      _ => (2, 10, 3),
+      >= 1 => (15, 30, 8),
+      _ => (10, 20, 5),
     };
     final a = drillRandom.nextInt(maxA - minA + 1) + minA;
     final b = drillRandom.nextInt(a - 1) + 1;
