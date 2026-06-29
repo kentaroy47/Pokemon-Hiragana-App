@@ -12,6 +12,8 @@ import 'sugoroku_screen.dart';
 import 'settings_screen.dart';
 import 'math_screen.dart';
 import 'pokemon_screen.dart' show PokemonPlayMode, PokemonScreen;
+import 'kanji_writing_screen.dart';
+import 'kanji_reading_quiz_screen.dart';
 import 'pokemon_reading_quiz_screen.dart';
 import '../widgets/pokedex_dialog.dart';
 import '../services/analytics_service.dart';
@@ -343,6 +345,36 @@ class _RightPanel extends StatelessWidget {
                 MaterialPageRoute(
                   builder: (_) => const PokemonScreen(mode: PokemonPlayMode.katakanaHard),
                 ),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+
+          // かんじをかこう！（常に表示）
+          _MenuButton(
+            emoji: '✏️',
+            label: 'かんじをかこう！',
+            color: const Color(0xFF1565C0),
+            onTap: () {
+              AnalyticsService.logScreenView('kanji_write');
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const KanjiWritingScreen()),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+
+          // かんじをよもう！（常に表示）
+          _MenuButton(
+            emoji: '📚',
+            label: 'かんじをよもう！',
+            color: const Color(0xFF2E7D32),
+            onTap: () {
+              AnalyticsService.logScreenView('kanji_read');
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const KanjiReadingQuizScreen()),
               );
             },
           ),

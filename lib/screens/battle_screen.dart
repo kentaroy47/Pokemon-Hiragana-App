@@ -275,7 +275,11 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
       1 => _generateAddition(zone),
       2 => _generateSubtraction(zone),
       3 => _generateKataToHira(),
-      4 => drillRandom.nextBool() ? _generateAddTens() : _generateAddTriple(),
+      4 => switch (drillRandom.nextInt(3)) {
+          0 => _generateAddTens(),
+          1 => _generateSubtractTens(),
+          _ => _generateAddTriple(),
+        },
       5 => _generateHantaigo(),
       6 => _generateNakamahazure(),
       _ => _generateGotouMoji(),
@@ -393,6 +397,32 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
         .toList();
     return _Quiz(
       displayBig: '$a ＋ $b',
+      prompt: 'こたえは いくつ？',
+      choices: choices,
+      correctIndex: choices.indexOf(answer.toString()),
+    );
+  }
+
+  // 二桁同士（一の桁がゼロ）の引き算: 50-20, 80-30 など
+  _Quiz _generateSubtractTens() {
+    int a, b;
+    do {
+      a = (drillRandom.nextInt(8) + 2) * 10; // 20〜90
+      b = (drillRandom.nextInt(8) + 1) * 10; // 10〜80
+    } while (b >= a);
+    final answer = a - b;
+    final wrongs = <int>{};
+    var attempts = 0;
+    while (wrongs.length < 3 && attempts < 50) {
+      attempts++;
+      final w = answer + (drillRandom.nextInt(5) - 2) * 10;
+      if (w != answer && w > 0 && w < a) wrongs.add(w);
+    }
+    final choices = ([answer, ...wrongs.take(3)]..shuffle(drillRandom))
+        .map((n) => n.toString())
+        .toList();
+    return _Quiz(
+      displayBig: '$a － $b',
       prompt: 'こたえは いくつ？',
       choices: choices,
       correctIndex: choices.indexOf(answer.toString()),
