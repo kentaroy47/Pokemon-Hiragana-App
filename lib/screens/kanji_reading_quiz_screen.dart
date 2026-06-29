@@ -38,6 +38,7 @@ class _KanjiReadingQuizScreenState extends State<KanjiReadingQuizScreen>
     with DrillRoundMixin {
   static const _passingScore = 5;
 
+  late List<KanjiEntry> _pool;
   int _totalAsked = 0;
   late _Question _current;
   String? _selectedAnswer;
@@ -45,6 +46,9 @@ class _KanjiReadingQuizScreenState extends State<KanjiReadingQuizScreen>
   @override
   void initState() {
     super.initState();
+    final max = StorageService.loadKanjiMaxStrokes();
+    _pool = kanjiList1.where((e) => e.strokeCount <= max).toList();
+    if (_pool.length < 4) _pool = kanjiList1;
     drillInitPokemonState();
     _startRound();
     AnalyticsService.logScreenView('kanji_read');
@@ -59,15 +63,15 @@ class _KanjiReadingQuizScreenState extends State<KanjiReadingQuizScreen>
   }
 
   _Question _generateQuestion() {
-    final idx = drillRandom.nextInt(kanjiList1.length);
-    final entry = kanjiList1[idx];
+    final idx = drillRandom.nextInt(_pool.length);
+    final entry = _pool[idx];
     final correct = entry.reading;
 
-    final pool = List<KanjiEntry>.from(kanjiList1)
+    final wrongPool = List<KanjiEntry>.from(kanjiList1)
       ..removeWhere((e) => e.reading == correct)
       ..shuffle(drillRandom);
 
-    final choices = [correct, ...pool.take(3).map((e) => e.reading)]
+    final choices = [correct, ...wrongPool.take(3).map((e) => e.reading)]
       ..shuffle(drillRandom);
 
     return _Question(entry: entry, choices: choices, correct: correct);

@@ -23,6 +23,7 @@ class _KanjiWritingScreenState extends State<KanjiWritingScreen>
     with DrillRoundMixin {
   static const _roundSize = 5;
 
+  late List<KanjiEntry> _pool;
   int _doneInRound = 0;
   int _sessionId = 0;
   late KanjiEntry _current;
@@ -32,6 +33,9 @@ class _KanjiWritingScreenState extends State<KanjiWritingScreen>
   @override
   void initState() {
     super.initState();
+    final max = StorageService.loadKanjiMaxStrokes();
+    _pool = kanjiList1.where((e) => e.strokeCount <= max).toList();
+    if (_pool.isEmpty) _pool = kanjiList1;
     drillInitPokemonState();
     _startRound();
     AnalyticsService.logScreenView('kanji_write');
@@ -48,11 +52,11 @@ class _KanjiWritingScreenState extends State<KanjiWritingScreen>
   void _nextKanji() {
     int idx;
     do {
-      idx = drillRandom.nextInt(kanjiList1.length);
-    } while (idx == _prevIndex && kanjiList1.length > 1);
+      idx = drillRandom.nextInt(_pool.length);
+    } while (idx == _prevIndex && _pool.length > 1);
     _prevIndex = idx;
     _sessionId++;
-    _current = kanjiList1[idx];
+    _current = _pool[idx];
   }
 
   void _onCanvasComplete(int score) {

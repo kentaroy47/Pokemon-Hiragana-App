@@ -31,6 +31,10 @@ class StorageService {
   static void saveShowKatakanaYomou(bool value) {}
   static bool loadShowMemory() => true;
   static void saveShowMemory(bool value) {}
+  static bool loadShowClock() => true;
+  static void saveShowClock(bool value) {}
+  static int loadKanjiMaxStrokes() => 99;
+  static void saveKanjiMaxStrokes(int value) {}
   static int loadStreakCount() => 0;
   static int recordPlayStreak() => 0;
   static int shinyBonusRemaining() => 0;

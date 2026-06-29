@@ -10,6 +10,8 @@ class HomeVisibilityService {
       ValueNotifier<bool>(StorageService.loadShowKatakanaYomou());
   static final showMemoryNotifier =
       ValueNotifier<bool>(StorageService.loadShowMemory());
+  static final showClockNotifier =
+      ValueNotifier<bool>(StorageService.loadShowClock());
 
   static void setShowKokugoEasy(bool value) {
     StorageService.saveShowKokugoEasy(value);
@@ -24,5 +26,10 @@ class HomeVisibilityService {
   static void setShowMemory(bool value) {
     StorageService.saveShowMemory(value);
     showMemoryNotifier.value = value;
+  }
+
+  static void setShowClock(bool value) {
+    StorageService.saveShowClock(value);
+    showClockNotifier.value = value;
   }
 }

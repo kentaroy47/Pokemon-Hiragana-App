@@ -31,6 +31,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _showKokugoEasy = false;
   bool _showKatakanaYomou = false;
   bool _showMemory = true;
+  bool _showClock = true;
+  int _kanjiMaxStrokes = 99;
   final Map<String, List<(String, int)>> _weekData = {};
 
   @override
@@ -42,6 +44,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _showKokugoEasy = StorageService.loadShowKokugoEasy();
     _showKatakanaYomou = StorageService.loadShowKatakanaYomou();
     _showMemory = StorageService.loadShowMemory();
+    _showClock = StorageService.loadShowClock();
+    _kanjiMaxStrokes = StorageService.loadKanjiMaxStrokes();
     for (final key in _kAllDrillKeys) {
       _weekData[key] = StorageService.loadWeekSummary(key);
     }
@@ -390,6 +394,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     child: Row(
                       children: [
+                        const Text('🕐', style: TextStyle(fontSize: 22)),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'とけいをよもう！を表示',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.darkText,
+                                ),
+                              ),
+                              Text(
+                                'じかんをよむドリル',
+                                style: TextStyle(
+                                    fontSize: 12, color: AppTheme.textGray),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: _showClock,
+                          onChanged: (v) {
+                            setState(() => _showClock = v);
+                            HomeVisibilityService.setShowClock(v);
+                          },
+                          activeColor: AppTheme.blueAccent,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: AppTheme.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFEEEEEE)),
+                    ),
+                    child: Row(
+                      children: [
                         const Text('🃏', style: TextStyle(fontSize: 22)),
                         const SizedBox(width: 12),
                         const Expanded(
@@ -422,6 +470,61 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ],
                     ),
+                  ),
+
+                  // ─── かんじのレベル ───
+                  const SizedBox(height: 24),
+                  const Divider(),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'かんじのむずかしさ',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.darkText,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    '出てくる漢字の画数で難しさを選べます',
+                    style: TextStyle(fontSize: 13, color: AppTheme.textGray),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      _KanjiLevelButton(
+                        label: 'はじめ',
+                        sub: '（4画以下）',
+                        maxStrokes: 4,
+                        selected: _kanjiMaxStrokes == 4,
+                        onTap: () {
+                          setState(() => _kanjiMaxStrokes = 4);
+                          StorageService.saveKanjiMaxStrokes(4);
+                        },
+                      ),
+                      const SizedBox(width: 10),
+                      _KanjiLevelButton(
+                        label: 'ふつう',
+                        sub: '（7画以下）',
+                        maxStrokes: 7,
+                        selected: _kanjiMaxStrokes == 7,
+                        onTap: () {
+                          setState(() => _kanjiMaxStrokes = 7);
+                          StorageService.saveKanjiMaxStrokes(7);
+                        },
+                      ),
+                      const SizedBox(width: 10),
+                      _KanjiLevelButton(
+                        label: 'ぜんぶ',
+                        sub: '（79字）',
+                        maxStrokes: 99,
+                        selected: _kanjiMaxStrokes == 99,
+                        onTap: () {
+                          setState(() => _kanjiMaxStrokes = 99);
+                          StorageService.saveKanjiMaxStrokes(99);
+                        },
+                      ),
+                    ],
                   ),
 
                   // ─── 週間サマリ ───
@@ -622,6 +725,66 @@ class _CountPicker extends StatelessWidget {
           icon,
           size: 20,
           color: enabled ? AppTheme.blueAccent : AppTheme.textGray,
+        ),
+      ),
+    );
+  }
+}
+
+class _KanjiLevelButton extends StatelessWidget {
+  final String label;
+  final String sub;
+  final int maxStrokes;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _KanjiLevelButton({
+    required this.label,
+    required this.sub,
+    required this.maxStrokes,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const activeColor = Color(0xFF1565C0);
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: selected ? activeColor : AppTheme.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: selected ? activeColor : const Color(0xFFCCCCCC),
+              width: selected ? 2 : 1,
+            ),
+          ),
+          child: Column(
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: selected ? Colors.white : AppTheme.darkText,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                sub,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: selected
+                      ? Colors.white.withValues(alpha: 0.8)
+                      : AppTheme.textGray,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

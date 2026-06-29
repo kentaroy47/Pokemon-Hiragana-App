@@ -24,6 +24,8 @@ const _battleRewardVisibleKey = 'battle_reward_visible';
 const _showKokugoEasyKey = 'show_kokugo_easy';
 const _showKatakanaYomouKey = 'show_katakana_yomou';
 const _showMemoryKey = 'show_memory';
+const _showClockKey = 'show_clock';
+const _kanjiMaxStrokesKey = 'kanji_max_strokes';
 const _streakCountKey = 'streak_count';
 const _streakLastDateKey = 'streak_last_date';
 
@@ -347,6 +349,30 @@ class StorageService {
 
   static void saveShowMemory(bool value) {
     try { _localStorage.setItem(_showMemoryKey, '$value'); } catch (_) {}
+  }
+
+  /// とけいをよもう！の表示（デフォルト: 表示）
+  static bool loadShowClock() {
+    try {
+      final raw = _localStorage.getItem(_showClockKey)?.toDart;
+      if (raw == null) return true;
+      return raw == 'true';
+    } catch (_) { return true; }
+  }
+
+  static void saveShowClock(bool value) {
+    try { _localStorage.setItem(_showClockKey, '$value'); } catch (_) {}
+  }
+
+  /// かんじの最大画数フィルター（デフォルト: 99 = 全部）
+  static int loadKanjiMaxStrokes() {
+    try {
+      return int.tryParse(_localStorage.getItem(_kanjiMaxStrokesKey)?.toDart ?? '') ?? 99;
+    } catch (_) { return 99; }
+  }
+
+  static void saveKanjiMaxStrokes(int value) {
+    try { _localStorage.setItem(_kanjiMaxStrokesKey, '$value'); } catch (_) {}
   }
 
   // ─── ホームボーナス ───────────────────────────────────────────────────────────

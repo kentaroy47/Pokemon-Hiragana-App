@@ -299,259 +299,265 @@ class _RightPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = paletteOf(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Text(
-            'たのしくまなぼう！',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.darkText,
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // ひらがなをかこう！（むずかしい、常に表示）
-          _MenuButton(
-            emoji: '🔥',
-            label: 'ひらがなをかこう！',
-            color: const Color(0xFF6A1B9A),
-            onTap: () {
-              AnalyticsService.logScreenView('hiragana_hard');
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const PokemonScreen(mode: PokemonPlayMode.hiraganaHard),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 12),
-
-          // カタカナをかこう！（むずかしい、常に表示）
-          _MenuButton(
-            emoji: '💪',
-            label: 'カタカナをかこう！',
-            color: const Color(0xFFE65100),
-            onTap: () {
-              AnalyticsService.logScreenView('katakana_hard');
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const PokemonScreen(mode: PokemonPlayMode.katakanaHard),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 12),
-
-          // かんじをかこう！（常に表示）
-          _MenuButton(
-            emoji: '✏️',
-            label: 'かんじをかこう！',
-            color: const Color(0xFF1565C0),
-            onTap: () {
-              AnalyticsService.logScreenView('kanji_write');
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const KanjiWritingScreen()),
-              );
-            },
-          ),
-          const SizedBox(height: 12),
-
-          // かんじをよもう！（常に表示）
-          _MenuButton(
-            emoji: '📚',
-            label: 'かんじをよもう！',
-            color: const Color(0xFF2E7D32),
-            onTap: () {
-              AnalyticsService.logScreenView('kanji_read');
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const KanjiReadingQuizScreen()),
-              );
-            },
-          ),
-          const SizedBox(height: 12),
-
-          // さんすう button
-          _MenuButton(
-            emoji: '🔢',
-            label: 'さんすう',
-            color: palette.secondary,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const MathScreen()),
-              );
-            },
-          ),
-          const SizedBox(height: 12),
-
-          // とけいをよもう！ button
-          _MenuButton(
-            emoji: '🕐',
-            label: 'とけいをよもう！',
-            color: const Color(0xFF48BEFF),
-            onTap: () {
-              AnalyticsService.logScreenView('clock');
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ClockScreen()),
-              );
-            },
-          ),
-          const SizedBox(height: 12),
-
-          // カタカナをよもう！（デフォルト非表示）
-          ValueListenableBuilder<bool>(
-            valueListenable: HomeVisibilityService.showKatakanaYomouNotifier,
-            builder: (context, show, _) {
-              if (!show) return const SizedBox.shrink();
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _MenuButton(
-                    emoji: '🌼',
-                    label: 'カタカナをよもう！',
-                    color: const Color(0xFFFF9F43),
-                    onTap: () async {
-                      final result = await showDialog<_KatakanaMode>(
-                        context: context,
-                        builder: (_) => const _KatakanaModeDialog(),
-                      );
-                      if (result == null) return;
-                      if (!context.mounted) return;
-                      switch (result) {
-                        case _KatakanaMode.random:
-                          AnalyticsService.logScreenView('katakana_quiz');
-                          Navigator.push(context,
-                              MaterialPageRoute(builder: (_) => const KatakanaQuizScreen()));
-                        case _KatakanaMode.pokemonHiragana:
-                          Navigator.push(context,
-                              MaterialPageRoute(
-                                  builder: (_) => const PokemonReadingQuizScreen(
-                                      mode: PokemonReadingMode.hiragana)));
-                        case _KatakanaMode.pokemonKatakana:
-                          Navigator.push(context,
-                              MaterialPageRoute(
-                                  builder: (_) => const PokemonReadingQuizScreen(
-                                      mode: PokemonReadingMode.katakana)));
-                      }
-                    },
+    return Column(
+      children: [
+        // スクロール可能なメニュー領域
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(48, 28, 48, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'たのしくまなぼう！',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.darkText,
                   ),
-                  const SizedBox(height: 12),
-                ],
-              );
-            },
-          ),
+                ),
+                const SizedBox(height: 14),
 
-          // こくご（かんたん）（デフォルト非表示）
-          ValueListenableBuilder<bool>(
-            valueListenable: HomeVisibilityService.showKokugoEasyNotifier,
-            builder: (context, show, _) {
-              if (!show) return const SizedBox.shrink();
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _MenuButton(
-                    emoji: '📖',
-                    label: 'こくご（かんたん）',
-                    color: palette.primary,
-                    onTap: () async {
-                      final result = await showDialog<_KokugoEasyMode>(
-                        context: context,
-                        builder: (_) => const _KokugoEasyModeDialog(),
-                      );
-                      if (result == null) return;
-                      if (!context.mounted) return;
-                      switch (result) {
-                        case _KokugoEasyMode.hiragana:
-                          AnalyticsService.logScreenView('hiragana');
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const PokemonScreen(mode: PokemonPlayMode.hiragana),
-                            ),
-                          );
-                        case _KokugoEasyMode.katakana:
-                          AnalyticsService.logScreenView('katakana');
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const PokemonScreen(mode: PokemonPlayMode.katakana),
-                            ),
-                          );
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                ],
-              );
-            },
-          ),
-
-          const SizedBox(height: 8),
-
-          // ゲームモード（カード・スゴロク・バトル）横並び
-          ValueListenableBuilder<bool>(
-            valueListenable: HomeVisibilityService.showMemoryNotifier,
-            builder: (context, showMemory, _) {
-          return Row(
-            children: [
-              if (showMemory) ...[
-                _GameButton(
-                  emoji: '🃏',
-                  label: 'カード',
-                  color: const Color(0xFF6C5CE7),
+                _MenuButton(
+                  emoji: '🔥',
+                  label: 'ひらがなをかこう！',
+                  color: const Color(0xFF6A1B9A),
                   onTap: () {
-                    AnalyticsService.logScreenView('memory');
-                    Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => const MemoryScreen()));
+                    AnalyticsService.logScreenView('hiragana_hard');
+                    Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => const PokemonScreen(mode: PokemonPlayMode.hiraganaHard),
+                    ));
                   },
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(height: 10),
+
+                _MenuButton(
+                  emoji: '💪',
+                  label: 'カタカナをかこう！',
+                  color: const Color(0xFFE65100),
+                  onTap: () {
+                    AnalyticsService.logScreenView('katakana_hard');
+                    Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => const PokemonScreen(mode: PokemonPlayMode.katakanaHard),
+                    ));
+                  },
+                ),
+                const SizedBox(height: 10),
+
+                _MenuButton(
+                  emoji: '✏️',
+                  label: 'かんじをかこう！',
+                  color: const Color(0xFF1565C0),
+                  onTap: () {
+                    AnalyticsService.logScreenView('kanji_write');
+                    Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => const KanjiWritingScreen(),
+                    ));
+                  },
+                ),
+                const SizedBox(height: 10),
+
+                _MenuButton(
+                  emoji: '📚',
+                  label: 'かんじをよもう！',
+                  color: const Color(0xFF2E7D32),
+                  onTap: () {
+                    AnalyticsService.logScreenView('kanji_read');
+                    Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => const KanjiReadingQuizScreen(),
+                    ));
+                  },
+                ),
+                const SizedBox(height: 10),
+
+                _MenuButton(
+                  emoji: '🔢',
+                  label: 'さんすう',
+                  color: palette.secondary,
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => const MathScreen(),
+                    ));
+                  },
+                ),
+                const SizedBox(height: 10),
+
+                // とけいをよもう！（デフォルト表示、設定で非表示可）
+                ValueListenableBuilder<bool>(
+                  valueListenable: HomeVisibilityService.showClockNotifier,
+                  builder: (context, show, _) {
+                    if (!show) return const SizedBox.shrink();
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _MenuButton(
+                          emoji: '🕐',
+                          label: 'とけいをよもう！',
+                          color: const Color(0xFF48BEFF),
+                          onTap: () {
+                            AnalyticsService.logScreenView('clock');
+                            Navigator.push(context, MaterialPageRoute(
+                              builder: (_) => const ClockScreen(),
+                            ));
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+                    );
+                  },
+                ),
+
+                // カタカナをよもう！（デフォルト非表示）
+                ValueListenableBuilder<bool>(
+                  valueListenable: HomeVisibilityService.showKatakanaYomouNotifier,
+                  builder: (context, show, _) {
+                    if (!show) return const SizedBox.shrink();
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _MenuButton(
+                          emoji: '🌼',
+                          label: 'カタカナをよもう！',
+                          color: const Color(0xFFFF9F43),
+                          onTap: () async {
+                            final result = await showDialog<_KatakanaMode>(
+                              context: context,
+                              builder: (_) => const _KatakanaModeDialog(),
+                            );
+                            if (result == null) return;
+                            if (!context.mounted) return;
+                            switch (result) {
+                              case _KatakanaMode.random:
+                                AnalyticsService.logScreenView('katakana_quiz');
+                                Navigator.push(context, MaterialPageRoute(
+                                  builder: (_) => const KatakanaQuizScreen(),
+                                ));
+                              case _KatakanaMode.pokemonHiragana:
+                                Navigator.push(context, MaterialPageRoute(
+                                  builder: (_) => const PokemonReadingQuizScreen(mode: PokemonReadingMode.hiragana),
+                                ));
+                              case _KatakanaMode.pokemonKatakana:
+                                Navigator.push(context, MaterialPageRoute(
+                                  builder: (_) => const PokemonReadingQuizScreen(mode: PokemonReadingMode.katakana),
+                                ));
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+                    );
+                  },
+                ),
+
+                // こくご（かんたん）（デフォルト非表示）
+                ValueListenableBuilder<bool>(
+                  valueListenable: HomeVisibilityService.showKokugoEasyNotifier,
+                  builder: (context, show, _) {
+                    if (!show) return const SizedBox.shrink();
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _MenuButton(
+                          emoji: '📖',
+                          label: 'こくご（かんたん）',
+                          color: palette.primary,
+                          onTap: () async {
+                            final result = await showDialog<_KokugoEasyMode>(
+                              context: context,
+                              builder: (_) => const _KokugoEasyModeDialog(),
+                            );
+                            if (result == null) return;
+                            if (!context.mounted) return;
+                            switch (result) {
+                              case _KokugoEasyMode.hiragana:
+                                AnalyticsService.logScreenView('hiragana');
+                                Navigator.push(context, MaterialPageRoute(
+                                  builder: (_) => const PokemonScreen(mode: PokemonPlayMode.hiragana),
+                                ));
+                              case _KokugoEasyMode.katakana:
+                                AnalyticsService.logScreenView('katakana');
+                                Navigator.push(context, MaterialPageRoute(
+                                  builder: (_) => const PokemonScreen(mode: PokemonPlayMode.katakana),
+                                ));
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 4),
+
+                // スゴロク（大きいボタン）
+                _MenuButton(
+                  emoji: '🎲',
+                  label: 'スゴロク',
+                  color: const Color(0xFF00B894),
+                  onTap: () {
+                    AnalyticsService.logScreenView('sugoroku');
+                    Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => const SugorokuScreen(),
+                    ));
+                  },
+                ),
+                const SizedBox(height: 10),
+
+                // バトル！（大きいボタン）
+                _MenuButton(
+                  emoji: '⚔️',
+                  label: 'バトル！',
+                  color: const Color(0xFFE17055),
+                  onTap: () {
+                    AnalyticsService.logScreenView('battle');
+                    Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => const BattleScreen(),
+                    ));
+                  },
+                ),
+
+                // カードあわせ（オプション）
+                ValueListenableBuilder<bool>(
+                  valueListenable: HomeVisibilityService.showMemoryNotifier,
+                  builder: (context, showMemory, _) {
+                    if (!showMemory) return const SizedBox.shrink();
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SizedBox(height: 10),
+                        Row(children: [
+                          _GameButton(
+                            emoji: '🃏',
+                            label: 'カードあわせ',
+                            color: const Color(0xFF6C5CE7),
+                            onTap: () {
+                              AnalyticsService.logScreenView('memory');
+                              Navigator.push(context, MaterialPageRoute(
+                                builder: (_) => const MemoryScreen(),
+                              ));
+                            },
+                          ),
+                        ]),
+                      ],
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 10),
+                const _TodayStatsRow(),
+                const SizedBox(height: 8),
               ],
-              _GameButton(
-                emoji: '🎲',
-                label: 'スゴロク',
-                color: const Color(0xFF00B894),
-                onTap: () {
-                  AnalyticsService.logScreenView('sugoroku');
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const SugorokuScreen()));
-                },
-              ),
-              const SizedBox(width: 8),
-              _GameButton(
-                emoji: '⚔️',
-                label: 'バトル！',
-                color: const Color(0xFFE17055),
-                onTap: () {
-                  AnalyticsService.logScreenView('battle');
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const BattleScreen()));
-                },
-              ),
-            ],
-          );
-            },
+            ),
           ),
+        ),
 
-          const SizedBox(height: 8),
-          const _TodayStatsRow(),
-          const Spacer(),
-
-          // 下段：図鑑 + パレット選択
-          Row(
+        // 下段固定：図鑑 + 設定 + パレット
+        Padding(
+          padding: const EdgeInsets.fromLTRB(48, 4, 48, 12),
+          child: Row(
             children: [
-              // 図鑑ボタン
               GestureDetector(
                 onTap: () {
                   final lookup = {
@@ -562,8 +568,7 @@ class _RightPanel extends StatelessWidget {
                       .whereType<Object>()
                       .cast<dynamic>()
                       .toList();
-                  final shinyNames =
-                      StorageService.loadShinyCaughtNames().toSet();
+                  final shinyNames = StorageService.loadShinyCaughtNames().toSet();
                   if (caught.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -576,29 +581,23 @@ class _RightPanel extends StatelessWidget {
                   showDialog(
                     context: context,
                     builder: (_) => PokedexDialog(
-                      caughtPokemon: List.unmodifiable(
-                          caught.cast()),
+                      caughtPokemon: List.unmodifiable(caught.cast()),
                       shinyCaughtNames: shinyNames,
-                      todayCaughtNames:
-                          StorageService.loadTodayCaughtNamesList(),
+                      todayCaughtNames: StorageService.loadTodayCaughtNamesList(),
                     ),
                   );
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: AppTheme.blueAccent.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: AppTheme.blueAccent.withValues(alpha: 0.3),
-                    ),
+                    border: Border.all(color: AppTheme.blueAccent.withValues(alpha: 0.3)),
                   ),
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.menu_book_rounded,
-                          size: 16, color: AppTheme.blueAccent),
+                      Icon(Icons.menu_book_rounded, size: 16, color: AppTheme.blueAccent),
                       SizedBox(width: 6),
                       Text(
                         'ずかん',
@@ -614,28 +613,24 @@ class _RightPanel extends StatelessWidget {
               ),
               const Spacer(),
               GestureDetector(
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                ),
+                onTap: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const SettingsScreen())),
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: AppTheme.textGray.withValues(alpha: 0.08),
                     shape: BoxShape.circle,
-                    border: Border.all(
-                        color: AppTheme.textGray.withValues(alpha: 0.2)),
+                    border: Border.all(color: AppTheme.textGray.withValues(alpha: 0.2)),
                   ),
-                  child: const Icon(Icons.settings_rounded,
-                      size: 16, color: AppTheme.textGray),
+                  child: const Icon(Icons.settings_rounded, size: 16, color: AppTheme.textGray),
                 ),
               ),
               const SizedBox(width: 8),
               _PalettePicker(currentId: palette.id),
             ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
