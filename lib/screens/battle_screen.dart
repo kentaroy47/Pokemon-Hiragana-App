@@ -221,13 +221,31 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
   int _powerLevel = 0;      // 0〜2 チャージ中、3 = とくぎ発動可能
   bool _specialHit = false; // とくぎ発動時の黄色フラッシュ
   bool _rewardVisible = true; // ゲットできるポケモンを表示するか
+  bool _kokugoEnabled = true;
+  bool _mathEnabled = true;
   PokemonEntry? _playerBattlePokemon; // バトルに出す伝説ポケモン（報酬とは別）
+
+  // ゾーン別問題タイプ定義（タイプ番号は _generateQuiz の switch と対応）
+  // こくご: 0=ひら→カタ, 3=カタ→ひら, 5=反対語, 6=なかまはずれ, 7=語頭文字
+  // さんすう: 1=足し算, 2=引き算, 4=応用計算(二桁/3数)
+  static const _kokugoByZone = [
+    [0],           // zone 0: ひら→カタのみ
+    [0, 3],        // zone 1: +カタ→ひら
+    [0, 3, 5, 6, 7], // zone 2: +反対語, なかまはずれ, 語頭文字
+  ];
+  static const _mathByZone = [
+    [1, 2],        // zone 0: 足し算・引き算
+    [1, 2],        // zone 1: 同じ（難易度は内部で上がる）
+    [1, 2, 4],     // zone 2: +応用計算
+  ];
 
   @override
   void initState() {
     super.initState();
     drillInitPokemonState();
     _rewardVisible = StorageService.loadBattleRewardVisible();
+    _kokugoEnabled = StorageService.loadKokugoInBattle();
+    _mathEnabled = StorageService.loadMathInBattle();
     drillPickPendingPokemon(); // ゲットできる報酬ポケモン（ランダム）
     _pickPlayerBattlePokemon(); // バトルに出す伝説ポケモン
     _enemies = _pickEnemies();
@@ -264,12 +282,15 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
     return all.take(3).toList();
   }
 
-  // Zone 0 (battle 1): hiraToKata, add, sub (3 types)
-  // Zone 1 (battle 2): +kataToHira (4 types)
-  // Zone 2 (battle 3): +hardMath, 反対語, なかまはずれ, 語頭文字 (8 types)
   _Quiz _generateQuiz(int zone) {
-    final typeCount = zone == 0 ? 3 : zone == 1 ? 4 : 8;
-    final type = drillRandom.nextInt(typeCount);
+    final safeZone = zone.clamp(0, 2);
+    final types = [
+      if (_kokugoEnabled) ..._kokugoByZone[safeZone],
+      if (_mathEnabled) ..._mathByZone[safeZone],
+    ];
+    // 両方OFFは設定画面で禁止しているが念のためフォールバック
+    final pool = types.isNotEmpty ? types : _mathByZone[safeZone];
+    final type = pool[drillRandom.nextInt(pool.length)];
     return switch (type) {
       0 => _generateHiraToKata(),
       1 => _generateAddition(zone),

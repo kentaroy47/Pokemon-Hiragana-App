@@ -33,6 +33,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _showMemory = true;
   bool _showClock = true;
   int _kanjiMaxStrokes = 99;
+  bool _kokugoInBattle = true;
+  bool _mathInBattle = true;
+  bool _kokugoInSugoroku = true;
+  bool _mathInSugoroku = true;
   final Map<String, List<(String, int)>> _weekData = {};
 
   @override
@@ -46,6 +50,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _showMemory = StorageService.loadShowMemory();
     _showClock = StorageService.loadShowClock();
     _kanjiMaxStrokes = StorageService.loadKanjiMaxStrokes();
+    _kokugoInBattle = StorageService.loadKokugoInBattle();
+    _mathInBattle = StorageService.loadMathInBattle();
+    _kokugoInSugoroku = StorageService.loadKokugoInSugoroku();
+    _mathInSugoroku = StorageService.loadMathInSugoroku();
     for (final key in _kAllDrillKeys) {
       _weekData[key] = StorageService.loadWeekSummary(key);
     }
@@ -276,6 +284,56 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ],
                     ),
+                  ),
+
+                  // ─── バトル・スゴロク 問題ジャンル ───
+                  const SizedBox(height: 24),
+                  const Divider(),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'バトル・スゴロクの問題ジャンル',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.darkText,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'バトルとスゴロクで出す問題の種類を選べます',
+                    style: TextStyle(fontSize: 13, color: AppTheme.textGray),
+                  ),
+                  const SizedBox(height: 16),
+                  _GenreToggleRow(
+                    label: 'バトル',
+                    kokugoValue: _kokugoInBattle,
+                    mathValue: _mathInBattle,
+                    onKokugoChanged: (v) {
+                      if (!v && !_mathInBattle) return; // 両方OFFは禁止
+                      setState(() => _kokugoInBattle = v);
+                      StorageService.saveKokugoInBattle(v);
+                    },
+                    onMathChanged: (v) {
+                      if (!v && !_kokugoInBattle) return;
+                      setState(() => _mathInBattle = v);
+                      StorageService.saveMathInBattle(v);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _GenreToggleRow(
+                    label: 'スゴロク',
+                    kokugoValue: _kokugoInSugoroku,
+                    mathValue: _mathInSugoroku,
+                    onKokugoChanged: (v) {
+                      if (!v && !_mathInSugoroku) return;
+                      setState(() => _kokugoInSugoroku = v);
+                      StorageService.saveKokugoInSugoroku(v);
+                    },
+                    onMathChanged: (v) {
+                      if (!v && !_kokugoInSugoroku) return;
+                      setState(() => _mathInSugoroku = v);
+                      StorageService.saveMathInSugoroku(v);
+                    },
                   ),
 
                   // ─── ホーム画面設定 ───
@@ -784,6 +842,74 @@ class _KanjiLevelButton extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GenreToggleRow extends StatelessWidget {
+  final String label;
+  final bool kokugoValue;
+  final bool mathValue;
+  final ValueChanged<bool> onKokugoChanged;
+  final ValueChanged<bool> onMathChanged;
+
+  const _GenreToggleRow({
+    required this.label,
+    required this.kokugoValue,
+    required this.mathValue,
+    required this.onKokugoChanged,
+    required this.onMathChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppTheme.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFEEEEEE)),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.darkText,
+              ),
+            ),
+          ),
+          _chip('📖 こくご', kokugoValue, onKokugoChanged),
+          const SizedBox(width: 8),
+          _chip('🔢 さんすう', mathValue, onMathChanged),
+        ],
+      ),
+    );
+  }
+
+  Widget _chip(String text, bool value, ValueChanged<bool> onChanged) {
+    return GestureDetector(
+      onTap: () => onChanged(!value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: value ? AppTheme.blueAccent : const Color(0xFFEEEEEE),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: value ? Colors.white : AppTheme.textGray,
           ),
         ),
       ),

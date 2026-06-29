@@ -35,6 +35,14 @@ class StorageService {
   static void saveShowClock(bool value) {}
   static int loadKanjiMaxStrokes() => 99;
   static void saveKanjiMaxStrokes(int value) {}
+  static bool loadKokugoInBattle() => true;
+  static void saveKokugoInBattle(bool value) {}
+  static bool loadMathInBattle() => true;
+  static void saveMathInBattle(bool value) {}
+  static bool loadKokugoInSugoroku() => true;
+  static void saveKokugoInSugoroku(bool value) {}
+  static bool loadMathInSugoroku() => true;
+  static void saveMathInSugoroku(bool value) {}
   static int loadStreakCount() => 0;
   static int recordPlayStreak() => 0;
   static int shinyBonusRemaining() => 0;

@@ -26,6 +26,10 @@ const _showKatakanaYomouKey = 'show_katakana_yomou';
 const _showMemoryKey = 'show_memory';
 const _showClockKey = 'show_clock';
 const _kanjiMaxStrokesKey = 'kanji_max_strokes';
+const _kokugoInBattleKey = 'show_kokugo_in_battle';
+const _mathInBattleKey = 'show_math_in_battle';
+const _kokugoInSugorokuKey = 'show_kokugo_in_sugoroku';
+const _mathInSugorokuKey = 'show_math_in_sugoroku';
 const _streakCountKey = 'streak_count';
 const _streakLastDateKey = 'streak_last_date';
 
@@ -373,6 +377,48 @@ class StorageService {
 
   static void saveKanjiMaxStrokes(int value) {
     try { _localStorage.setItem(_kanjiMaxStrokesKey, '$value'); } catch (_) {}
+  }
+
+  // ─── バトル・スゴロク 問題ジャンル ────────────────────────────────────────────
+
+  static bool loadKokugoInBattle() {
+    try {
+      final raw = _localStorage.getItem(_kokugoInBattleKey)?.toDart;
+      return raw == null || raw == 'true';
+    } catch (_) { return true; }
+  }
+  static void saveKokugoInBattle(bool v) {
+    try { _localStorage.setItem(_kokugoInBattleKey, '$v'); } catch (_) {}
+  }
+
+  static bool loadMathInBattle() {
+    try {
+      final raw = _localStorage.getItem(_mathInBattleKey)?.toDart;
+      return raw == null || raw == 'true';
+    } catch (_) { return true; }
+  }
+  static void saveMathInBattle(bool v) {
+    try { _localStorage.setItem(_mathInBattleKey, '$v'); } catch (_) {}
+  }
+
+  static bool loadKokugoInSugoroku() {
+    try {
+      final raw = _localStorage.getItem(_kokugoInSugorokuKey)?.toDart;
+      return raw == null || raw == 'true';
+    } catch (_) { return true; }
+  }
+  static void saveKokugoInSugoroku(bool v) {
+    try { _localStorage.setItem(_kokugoInSugorokuKey, '$v'); } catch (_) {}
+  }
+
+  static bool loadMathInSugoroku() {
+    try {
+      final raw = _localStorage.getItem(_mathInSugorokuKey)?.toDart;
+      return raw == null || raw == 'true';
+    } catch (_) { return true; }
+  }
+  static void saveMathInSugoroku(bool v) {
+    try { _localStorage.setItem(_mathInSugorokuKey, '$v'); } catch (_) {}
   }
 
   // ─── ホームボーナス ───────────────────────────────────────────────────────────

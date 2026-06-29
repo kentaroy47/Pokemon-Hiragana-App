@@ -110,11 +110,15 @@ class _SugorokuScreenState extends State<SugorokuScreen> with DrillRoundMixin {
   bool _exhausted = false;
   int _stepsWalked = 0;
   int _mathZonePenalty = 0;
+  bool _kokugoEnabled = true;
+  bool _mathEnabled = true;
 
   @override
   void initState() {
     super.initState();
     drillInitPokemonState();
+    _kokugoEnabled = StorageService.loadKokugoInSugoroku();
+    _mathEnabled = StorageService.loadMathInSugoroku();
     drillPickPendingPokemon();
     _currentQuiz = _generateQuiz();
     if (drillIsExhausted('sugoroku')) {
@@ -125,7 +129,12 @@ class _SugorokuScreenState extends State<SugorokuScreen> with DrillRoundMixin {
   }
 
   _Quiz _generateQuiz() {
-    final type = drillRandom.nextInt(3);
+    final types = [
+      if (_kokugoEnabled) 0,       // ひら→カタ
+      if (_mathEnabled) ...[1, 2], // 足し算・引き算
+    ];
+    final pool = types.isNotEmpty ? types : [1, 2]; // フォールバック
+    final type = pool[drillRandom.nextInt(pool.length)];
     if (type == 0) return _generateHiraToKata();
     if (type == 1) return _generateAddition(_position, _mathZonePenalty);
     return _generateSubtraction(_position, _mathZonePenalty);
