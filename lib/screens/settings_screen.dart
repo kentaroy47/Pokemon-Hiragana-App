@@ -11,7 +11,7 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-const _kAllDrillKeys = ['hiragana', 'math', 'clock', 'katakana_quiz', 'memory', 'sugoroku', 'battle', 'kanji_write', 'kanji_read'];
+const _kAllDrillKeys = ['hiragana', 'math', 'clock', 'katakana_quiz', 'memory', 'sugoroku', 'battle', 'kanji_write', 'kanji_read', 'pokemon_catch'];
 const _kDrillIcons = {
   'hiragana': '📖',
   'math': '🔢',
@@ -22,6 +22,7 @@ const _kDrillIcons = {
   'battle': '⚔️',
   'kanji_write': '✏️',
   'kanji_read': '📚',
+  'pokemon_catch': '🎯',
 };
 
 class _SettingsScreenState extends State<SettingsScreen> {

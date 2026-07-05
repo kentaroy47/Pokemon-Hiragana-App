@@ -13,7 +13,7 @@ class DailyStatsService {
   /// 今日残っている色違いボーナス枠（ホームの✨バッジ用）
   static final shinyBonusNotifier = ValueNotifier<int>(0);
 
-  static const _drillKeys = ['hiragana', 'math', 'clock', 'katakana_quiz', 'memory', 'sugoroku', 'battle', 'kanji_write', 'kanji_read'];
+  static const _drillKeys = ['hiragana', 'math', 'clock', 'katakana_quiz', 'memory', 'sugoroku', 'battle', 'kanji_write', 'kanji_read', 'pokemon_catch'];
 
   static final _drillNotifiers = <String, ValueNotifier<int>>{
     for (final k in _drillKeys) k: ValueNotifier(0),

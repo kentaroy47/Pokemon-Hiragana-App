@@ -14,6 +14,7 @@ import 'math_screen.dart';
 import 'pokemon_screen.dart' show PokemonPlayMode, PokemonScreen;
 import 'kanji_writing_screen.dart';
 import 'kanji_reading_quiz_screen.dart';
+import 'pokemon_catch_screen.dart';
 import 'pokemon_reading_quiz_screen.dart';
 import '../widgets/pokedex_dialog.dart';
 import '../services/analytics_service.dart';
@@ -366,6 +367,18 @@ class _RightPanel extends StatelessWidget {
                     AnalyticsService.logScreenView('kanji_read');
                     Navigator.push(context, MaterialPageRoute(
                       builder: (_) => const KanjiReadingQuizScreen(),
+                    ));
+                  },
+                ),
+                const SizedBox(height: 10),
+
+                _MenuButton(
+                  emoji: '🎯',
+                  label: 'ポケモンをつかまえよう！',
+                  color: const Color(0xFFE84B4B),
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => const PokemonCatchScreen(),
                     ));
                   },
                 ),
