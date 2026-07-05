@@ -559,6 +559,8 @@ class _PokemonCatchScreenState extends State<PokemonCatchScreen>
               isSecretStage: _isSecretStage,
               isRevealed: _stageCRevealed,
               pokemonColor: _currentPokemon.color,
+              pokemon: _currentPokemon,
+              isShiny: _isSecretStage ? _stageCIsShiny : false,
               caught: _caught,
               onRestart: _restart,
               onBack: () => Navigator.pop(context),
@@ -919,6 +921,8 @@ class _RightPanel extends StatelessWidget {
   final bool isSecretStage;
   final bool isRevealed;
   final Color pokemonColor;
+  final PokemonEntry pokemon;
+  final bool isShiny;
   final List<(PokemonEntry, bool)> caught;
   final VoidCallback onRestart;
   final VoidCallback onBack;
@@ -935,6 +939,8 @@ class _RightPanel extends StatelessWidget {
     required this.isSecretStage,
     required this.isRevealed,
     required this.pokemonColor,
+    required this.pokemon,
+    required this.isShiny,
     required this.caught,
     required this.onRestart,
     required this.onBack,
@@ -1037,30 +1043,60 @@ class _RightPanel extends StatelessWidget {
     }
 
     if (phase == _Phase.ballReady) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              '↑ スワイプして なげよう！',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFFE84B4B),
+      final showSilhouette = isSecretStage && !isRevealed;
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          // ポケモン（ボールの投げ先）
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isShiny && !showSilhouette)
+                const Text('✨', style: TextStyle(fontSize: 18, height: 1.2)),
+              showSilhouette
+                  ? ColorFiltered(
+                      colorFilter: const ColorFilter.mode(
+                          Color(0xFF1A1A2E), BlendMode.srcATop),
+                      child: PokemonImage(
+                          pokemon: pokemon, size: 140, isShiny: false),
+                    )
+                  : PokemonImage(pokemon: pokemon, size: 140, isShiny: isShiny),
+              Text(
+                showSilhouette ? '？？？？？' : pokemon.hiragana,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: showSilhouette ? AppTheme.textGray : AppTheme.darkText,
+                  letterSpacing: showSilhouette ? 4 : 0,
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-            GestureDetector(
-              onTap: onThrow,
-              child: const Pokeball(color: Color(0xFFCC2222), size: 80),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              '（タップでもなげられるよ）',
-              style: TextStyle(fontSize: 12, color: AppTheme.textGray),
-            ),
-          ],
-        ),
+            ],
+          ),
+          // 投げるエリア
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                '↑ スワイプして なげよう！',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFE84B4B),
+                ),
+              ),
+              const SizedBox(height: 16),
+              GestureDetector(
+                onTap: onThrow,
+                child: const Pokeball(color: Color(0xFFCC2222), size: 72),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '（タップでもなげられるよ）',
+                style: TextStyle(fontSize: 11, color: AppTheme.textGray),
+              ),
+            ],
+          ),
+        ],
       );
     }
 
