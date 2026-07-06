@@ -538,16 +538,15 @@ class _PokemonCatchScreenState extends State<PokemonCatchScreen>
             child: _LeftPanel(
               stage: _stage,
               phase: _phase,
-              pokemon: _currentPokemon,
-              isSecretStage: _isSecretStage,
-              isRevealed: _stageCRevealed,
-              isShiny: _isSecretStage ? _stageCIsShiny : false,
+              stageA: _stageA,
+              stageB: _stageB,
               correctInBall: _correctInBall,
               onBack: () => Navigator.pop(context),
             ),
           ),
           Expanded(
             child: _RightPanel(
+              stage: _stage,
               phase: _phase,
               quiz: _currentQuiz,
               selectedAnswer: _selectedAnswer,
@@ -561,6 +560,8 @@ class _PokemonCatchScreenState extends State<PokemonCatchScreen>
               pokemonColor: _currentPokemon.color,
               pokemon: _currentPokemon,
               isShiny: _isSecretStage ? _stageCIsShiny : false,
+              stageA: _stageA,
+              stageB: _stageB,
               caught: _caught,
               onRestart: _restart,
               onBack: () => Navigator.pop(context),
@@ -577,145 +578,59 @@ class _PokemonCatchScreenState extends State<PokemonCatchScreen>
 class _LeftPanel extends StatelessWidget {
   final int stage;
   final _Phase phase;
-  final PokemonEntry pokemon;
-  final bool isSecretStage;
-  final bool isRevealed;
-  final bool isShiny;
+  final PokemonEntry stageA;
+  final PokemonEntry stageB;
   final int correctInBall;
   final VoidCallback onBack;
 
   const _LeftPanel({
     required this.stage,
     required this.phase,
-    required this.pokemon,
-    required this.isSecretStage,
-    required this.isRevealed,
-    required this.isShiny,
+    required this.stageA,
+    required this.stageB,
     required this.correctInBall,
     required this.onBack,
   });
 
   @override
   Widget build(BuildContext context) {
-    final showSilhouette = isSecretStage && !isRevealed;
-    final isCaught = phase == _Phase.caught || phase == _Phase.stageResult;
-
     return Container(
       color: AppTheme.white,
-      child: Stack(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                  minHeight: MediaQuery.of(context).size.height - 16),
-              child: IntrinsicHeight(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: onBack,
-                      icon: const Icon(Icons.home_outlined, size: 14),
-                      label:
-                          const Text('もどる', style: TextStyle(fontSize: 12)),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppTheme.darkText,
-                        side: const BorderSide(color: Color(0xFFCCCCCC)),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20)),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _StageIndicator(stage: stage),
-                    const SizedBox(height: 16),
-
-                    // ── ポケモン画像 ──
-                    Center(
-                      child: Column(
-                        children: [
-                          if (isShiny && !showSilhouette)
-                            const Text('✨',
-                                style: TextStyle(fontSize: 20, height: 1.2)),
-                          SizedBox(
-                            width: 190,
-                            height: 190,
-                            child: showSilhouette
-                                ? ColorFiltered(
-                                    colorFilter: const ColorFilter.mode(
-                                        Color(0xFF1A1A2E), BlendMode.srcATop),
-                                    child: PokemonImage(
-                                        pokemon: pokemon,
-                                        size: 170,
-                                        isShiny: false),
-                                  )
-                                : PokemonImage(
-                                    pokemon: pokemon,
-                                    size: 170,
-                                    isShiny: isShiny),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            showSilhouette ? '？？？？？' : pokemon.hiragana,
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: showSilhouette
-                                  ? AppTheme.textGray
-                                  : AppTheme.darkText,
-                              letterSpacing: showSilhouette ? 4 : 0,
-                            ),
-                          ),
-                          if (isCaught && isShiny)
-                            const Padding(
-                              padding: EdgeInsets.only(top: 4),
-                              child: Text('いろちがい！',
-                                  style: TextStyle(
-                                      fontSize: 13,
-                                      color: Color(0xFFFFD700),
-                                      fontWeight: FontWeight.bold)),
-                            ),
-                          if (isCaught)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 18, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF4CAF50),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: const Text('ゲット！',
-                                    style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 15)),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-
-                    const Spacer(),
-
-                    if (phase == _Phase.answering || phase == _Phase.missed)
-                      _BallProgress(correctInBall: correctInBall),
-                    const SizedBox(height: 8),
-                  ],
-                ),
-              ),
+          OutlinedButton.icon(
+            onPressed: onBack,
+            icon: const Icon(Icons.home_outlined, size: 14),
+            label: const Text('もどる', style: TextStyle(fontSize: 12)),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppTheme.darkText,
+              side: const BorderSide(color: Color(0xFFCCCCCC)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
           ),
-          // コンフェッティ（シークレットゲット時）
-          if (isCaught && isSecretStage)
-            Positioned.fill(
-              child: IgnorePointer(
-                child: ConfettiOverlay(baseColor: pokemon.color),
-              ),
+          const SizedBox(height: 12),
+          _StageIndicator(stage: stage),
+          const Spacer(),
+
+          // ── ねらっているポケモン枠（ステージ1・2のみ） ──
+          if (stage < 2)
+            _CandidateFrame(
+              stage: stage,
+              stageA: stageA,
+              stageB: stageB,
+              compact: true,
             ),
+          const SizedBox(height: 8),
+          if (phase == _Phase.answering || phase == _Phase.missed)
+            _BallProgress(correctInBall: correctInBall),
+          const SizedBox(height: 8),
         ],
       ),
     );
@@ -774,6 +689,123 @@ class _StageIndicator extends StatelessWidget {
           ),
         );
       }),
+    );
+  }
+}
+
+// ─── 候補ポケモン枠（左パネル小・右パネル大） ───────────────────────────────────
+
+class _CandidateFrame extends StatelessWidget {
+  final int stage;
+  final PokemonEntry stageA;
+  final PokemonEntry stageB;
+  final bool compact; // true=左パネル小型, false=右パネル大型
+
+  const _CandidateFrame({
+    required this.stage,
+    required this.stageA,
+    required this.stageB,
+    required this.compact,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final double imgSize = compact ? 70 : 130;
+    final double fontSize = compact ? 10 : 15;
+
+    Widget pokemonTile(PokemonEntry p, bool isTarget, bool isCaught) {
+      return AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        padding: EdgeInsets.all(compact ? 6 : 10),
+        decoration: BoxDecoration(
+          color: isTarget
+              ? const Color(0xFFE84B4B).withValues(alpha: 0.12)
+              : isCaught
+                  ? const Color(0xFF4CAF50).withValues(alpha: 0.10)
+                  : const Color(0xFFF0F0F0),
+          borderRadius: BorderRadius.circular(compact ? 10 : 14),
+          border: Border.all(
+            color: isTarget
+                ? const Color(0xFFE84B4B)
+                : isCaught
+                    ? const Color(0xFF4CAF50)
+                    : const Color(0xFFDDDDDD),
+            width: isTarget ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                Opacity(
+                  opacity: isCaught ? 0.6 : 1.0,
+                  child: PokemonImage(pokemon: p, size: imgSize, isShiny: false),
+                ),
+                if (isCaught)
+                  Container(
+                    width: imgSize * 0.45,
+                    height: imgSize * 0.45,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF4CAF50),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.check, color: Colors.white, size: 20),
+                  ),
+              ],
+            ),
+            Text(
+              p.hiragana,
+              style: TextStyle(
+                fontSize: fontSize,
+                fontWeight: isTarget ? FontWeight.bold : FontWeight.normal,
+                color: isTarget ? const Color(0xFFE84B4B) : AppTheme.textGray,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: EdgeInsets.all(compact ? 8 : 12),
+      decoration: BoxDecoration(
+        color: AppTheme.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFDDDDDD)),
+        boxShadow: compact
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                )
+              ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'ねらっているポケモン',
+            style: TextStyle(
+              fontSize: compact ? 9 : 13,
+              color: AppTheme.textGray,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: compact ? 6 : 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              pokemonTile(stageA, stage == 0, stage > 0),
+              pokemonTile(stageB, stage == 1, stage > 1),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -907,6 +939,38 @@ class _BallProgress extends StatelessWidget {
   }
 }
 
+class _ThrowHint extends StatelessWidget {
+  final VoidCallback onThrow;
+  const _ThrowHint({required this.onThrow});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Text(
+          '↑ スワイプして なげよう！',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFFE84B4B),
+          ),
+        ),
+        const SizedBox(height: 14),
+        GestureDetector(
+          onTap: onThrow,
+          child: const Pokeball(color: Color(0xFFCC2222), size: 72),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          '（タップでもなげられるよ）',
+          style: TextStyle(fontSize: 11, color: AppTheme.textGray),
+        ),
+      ],
+    );
+  }
+}
+
 // ─── 右パネル（問題表示・ボール投げ） ─────────────────────────────────────────
 
 class _RightPanel extends StatelessWidget {
@@ -918,16 +982,20 @@ class _RightPanel extends StatelessWidget {
   final double throwOffsetX;
   final VoidCallback onThrow;
   final VoidCallback onNextStage;
+  final int stage;
   final bool isSecretStage;
   final bool isRevealed;
   final Color pokemonColor;
   final PokemonEntry pokemon;
   final bool isShiny;
+  final PokemonEntry stageA;
+  final PokemonEntry stageB;
   final List<(PokemonEntry, bool)> caught;
   final VoidCallback onRestart;
   final VoidCallback onBack;
 
   const _RightPanel({
+    required this.stage,
     required this.phase,
     required this.quiz,
     required this.selectedAnswer,
@@ -941,6 +1009,8 @@ class _RightPanel extends StatelessWidget {
     required this.pokemonColor,
     required this.pokemon,
     required this.isShiny,
+    required this.stageA,
+    required this.stageB,
     required this.caught,
     required this.onRestart,
     required this.onBack,
@@ -1043,59 +1113,46 @@ class _RightPanel extends StatelessWidget {
     }
 
     if (phase == _Phase.ballReady) {
-      final showSilhouette = isSecretStage && !isRevealed;
+      if (isSecretStage) {
+        // ステージ3（ひみつ）: シルエット＋ボール
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ColorFiltered(
+                  colorFilter: const ColorFilter.mode(
+                      Color(0xFF1A1A2E), BlendMode.srcATop),
+                  child: PokemonImage(
+                      pokemon: pokemon, size: 140, isShiny: false),
+                ),
+                const Text(
+                  '？？？？？',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textGray,
+                    letterSpacing: 4,
+                  ),
+                ),
+              ],
+            ),
+            _ThrowHint(onThrow: onThrow),
+          ],
+        );
+      }
+      // ステージ1・2: 候補枠（大）＋ボール
       return Column(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          // ポケモン（ボールの投げ先）
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (isShiny && !showSilhouette)
-                const Text('✨', style: TextStyle(fontSize: 18, height: 1.2)),
-              showSilhouette
-                  ? ColorFiltered(
-                      colorFilter: const ColorFilter.mode(
-                          Color(0xFF1A1A2E), BlendMode.srcATop),
-                      child: PokemonImage(
-                          pokemon: pokemon, size: 140, isShiny: false),
-                    )
-                  : PokemonImage(pokemon: pokemon, size: 140, isShiny: isShiny),
-              Text(
-                showSilhouette ? '？？？？？' : pokemon.hiragana,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: showSilhouette ? AppTheme.textGray : AppTheme.darkText,
-                  letterSpacing: showSilhouette ? 4 : 0,
-                ),
-              ),
-            ],
+          _CandidateFrame(
+            stage: stage,
+            stageA: stageA,
+            stageB: stageB,
+            compact: false,
           ),
-          // 投げるエリア
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                '↑ スワイプして なげよう！',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFFE84B4B),
-                ),
-              ),
-              const SizedBox(height: 16),
-              GestureDetector(
-                onTap: onThrow,
-                child: const Pokeball(color: Color(0xFFCC2222), size: 72),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                '（タップでもなげられるよ）',
-                style: TextStyle(fontSize: 11, color: AppTheme.textGray),
-              ),
-            ],
-          ),
+          _ThrowHint(onThrow: onThrow),
         ],
       );
     }
