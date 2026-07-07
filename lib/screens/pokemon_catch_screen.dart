@@ -128,6 +128,7 @@ class _PokemonCatchScreenState extends State<PokemonCatchScreen>
   bool _stageCIsShiny = false;
   bool _stageCRevealed = false;
   final List<(PokemonEntry, bool)> _caught = [];
+  PokemonEntry? _catchTarget; // スロー時に確定するキャッチ対象
 
   // ── アニメーション ──
   late AnimationController _throwCtrl;
@@ -175,7 +176,16 @@ class _PokemonCatchScreenState extends State<PokemonCatchScreen>
     }
   }
 
-  PokemonEntry get _currentPokemon => [_stageA, _stageB, _stageC][_stage];
+  PokemonEntry get _currentPokemon {
+    if (_stage == 2) return _stageC;
+    if (_catchTarget != null) return _catchTarget!;
+    // stage 1 では stage 0 で捕まった方の残りを返す
+    if (_stage == 1 && _caught.isNotEmpty) {
+      final prev = _caught.first.$1;
+      return prev.pokedexId == _stageA.pokedexId ? _stageB : _stageA;
+    }
+    return _stageA;
+  }
   bool get _isSecretStage => _stage == 2;
 
   double get _catchRate => switch (_missCount) {
@@ -442,8 +452,26 @@ class _PokemonCatchScreenState extends State<PokemonCatchScreen>
   void _onThrow() {
     if (_phase != _Phase.ballReady) return;
     final caught = drillRandom.nextDouble() < _catchRate;
-    // 外れた場合はボールが斜めに飛ぶ
-    _throwOffsetX = caught ? 0 : (drillRandom.nextBool() ? 0.25 : -0.25);
+
+    if (caught) {
+      if (_stage == 2) {
+        _catchTarget = _stageC;
+        _throwOffsetX = 0.0;
+      } else {
+        // stage 0: ランダムに stageA/B を選ぶ、stage 1: 残りを選ぶ
+        final prevId = _caught.isNotEmpty ? _caught.first.$1.pokedexId : null;
+        _catchTarget = (_stage == 0)
+            ? (drillRandom.nextBool() ? _stageA : _stageB)
+            : ((prevId == _stageA.pokedexId) ? _stageB : _stageA);
+        // ボールがフレーム内のターゲット方向へ飛ぶ（左=stageA, 右=stageB）
+        _throwOffsetX =
+            _catchTarget!.pokedexId == _stageA.pokedexId ? -0.22 : 0.22;
+      }
+    } else {
+      _catchTarget = null;
+      _throwOffsetX = drillRandom.nextBool() ? 0.35 : -0.35;
+    }
+
     setState(() => _phase = _Phase.throwing);
     _throwCtrl.reset();
     _throwCtrl.forward().then((_) {
@@ -505,6 +533,7 @@ class _PokemonCatchScreenState extends State<PokemonCatchScreen>
         _missCount = 0;
         _correctInBall = 0;
         _selectedAnswer = null;
+        _catchTarget = null;
         _currentQuiz = _generateQuiz();
       });
       _throwCtrl.reset();
@@ -518,6 +547,7 @@ class _PokemonCatchScreenState extends State<PokemonCatchScreen>
       _missCount = 0;
       _correctInBall = 0;
       _selectedAnswer = null;
+      _catchTarget = null;
       _caught.clear();
       _stageCRevealed = false;
     });
@@ -540,6 +570,8 @@ class _PokemonCatchScreenState extends State<PokemonCatchScreen>
               phase: _phase,
               stageA: _stageA,
               stageB: _stageB,
+              caughtA: _caught.any((e) => e.$1.pokedexId == _stageA.pokedexId),
+              caughtB: _caught.any((e) => e.$1.pokedexId == _stageB.pokedexId),
               correctInBall: _correctInBall,
               onBack: () => Navigator.pop(context),
             ),
@@ -580,6 +612,8 @@ class _LeftPanel extends StatelessWidget {
   final _Phase phase;
   final PokemonEntry stageA;
   final PokemonEntry stageB;
+  final bool caughtA;
+  final bool caughtB;
   final int correctInBall;
   final VoidCallback onBack;
 
@@ -588,6 +622,8 @@ class _LeftPanel extends StatelessWidget {
     required this.phase,
     required this.stageA,
     required this.stageB,
+    required this.caughtA,
+    required this.caughtB,
     required this.correctInBall,
     required this.onBack,
   });
@@ -622,9 +658,10 @@ class _LeftPanel extends StatelessWidget {
           // ── ねらっているポケモン枠（ステージ1・2のみ） ──
           if (stage < 2)
             _CandidateFrame(
-              stage: stage,
               stageA: stageA,
               stageB: stageB,
+              aIsCaught: caughtA,
+              bIsCaught: caughtB,
               compact: true,
             ),
           const SizedBox(height: 8),
@@ -696,15 +733,17 @@ class _StageIndicator extends StatelessWidget {
 // ─── 候補ポケモン枠（左パネル小・右パネル大） ───────────────────────────────────
 
 class _CandidateFrame extends StatelessWidget {
-  final int stage;
   final PokemonEntry stageA;
   final PokemonEntry stageB;
+  final bool aIsCaught;
+  final bool bIsCaught;
   final bool compact; // true=左パネル小型, false=右パネル大型
 
   const _CandidateFrame({
-    required this.stage,
     required this.stageA,
     required this.stageB,
+    required this.aIsCaught,
+    required this.bIsCaught,
     required this.compact,
   });
 
@@ -800,8 +839,8 @@ class _CandidateFrame extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              pokemonTile(stageA, stage == 0, stage > 0),
-              pokemonTile(stageB, stage == 1, stage > 1),
+              pokemonTile(stageA, !aIsCaught && bIsCaught, aIsCaught),
+              pokemonTile(stageB, !bIsCaught && aIsCaught, bIsCaught),
             ],
           ),
         ],
@@ -1069,6 +1108,15 @@ class _RightPanel extends StatelessWidget {
                   );
                 },
               ),
+
+            // ── コンフェッティ（シークレットゲット時） ──
+            if ((phase == _Phase.caught || phase == _Phase.stageResult) &&
+                isSecretStage)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: ConfettiOverlay(baseColor: pokemonColor),
+                ),
+              ),
           ],
         );
       }),
@@ -1147,9 +1195,10 @@ class _RightPanel extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           _CandidateFrame(
-            stage: stage,
             stageA: stageA,
             stageB: stageB,
+            aIsCaught: caught.any((e) => e.$1.pokedexId == stageA.pokedexId),
+            bIsCaught: caught.any((e) => e.$1.pokedexId == stageB.pokedexId),
             compact: false,
           ),
           _ThrowHint(onThrow: onThrow),
@@ -1162,17 +1211,44 @@ class _RightPanel extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('✨', style: TextStyle(fontSize: 52)),
-            const SizedBox(height: 10),
-            const Text(
-              'ゲットできた！',
-              style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF4CAF50)),
+            if (isShiny)
+              const Text('✨', style: TextStyle(fontSize: 22, height: 1.2)),
+            PokemonImage(pokemon: pokemon, size: 150, isShiny: isShiny),
+            const SizedBox(height: 6),
+            Text(
+              pokemon.hiragana,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.darkText,
+              ),
+            ),
+            if (isShiny)
+              const Text(
+                'いろちがい！',
+                style: TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFFFFD700),
+                    fontWeight: FontWeight.bold),
+              ),
+            const SizedBox(height: 8),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF4CAF50),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Text(
+                'ゲットできた！',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18),
+              ),
             ),
             if (phase == _Phase.stageResult) ...[
-              const SizedBox(height: 28),
+              const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: onNextStage,
                 style: ElevatedButton.styleFrom(
