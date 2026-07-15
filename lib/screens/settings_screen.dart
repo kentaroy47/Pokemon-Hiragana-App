@@ -38,6 +38,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _mathInBattle = true;
   bool _kokugoInSugoroku = true;
   bool _mathInSugoroku = true;
+  bool _kanaWritingEnabled = true;
   final Map<String, List<(String, int)>> _weekData = {};
 
   @override
@@ -55,6 +56,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _mathInBattle = StorageService.loadMathInBattle();
     _kokugoInSugoroku = StorageService.loadKokugoInSugoroku();
     _mathInSugoroku = StorageService.loadMathInSugoroku();
+    _kanaWritingEnabled = StorageService.loadKanaWritingEnabled();
     for (final key in _kAllDrillKeys) {
       _weekData[key] = StorageService.loadWeekSummary(key);
     }
@@ -335,6 +337,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       setState(() => _mathInSugoroku = v);
                       StorageService.saveMathInSugoroku(v);
                     },
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: AppTheme.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFEEEEEE)),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'かな書き練習',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.darkText,
+                                ),
+                              ),
+                              const Text(
+                                'バトル・キャッチでひらがな/カタカナをなぞる問題を出す',
+                                style: TextStyle(
+                                    fontSize: 12, color: AppTheme.textGray),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: _kanaWritingEnabled,
+                          onChanged: (v) {
+                            setState(() => _kanaWritingEnabled = v);
+                            StorageService.saveKanaWritingEnabled(v);
+                          },
+                          activeColor: AppTheme.blueAccent,
+                        ),
+                      ],
+                    ),
                   ),
 
                   // ─── ホーム画面設定 ───

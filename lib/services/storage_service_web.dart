@@ -30,6 +30,7 @@ const _kokugoInBattleKey = 'show_kokugo_in_battle';
 const _mathInBattleKey = 'show_math_in_battle';
 const _kokugoInSugorokuKey = 'show_kokugo_in_sugoroku';
 const _mathInSugorokuKey = 'show_math_in_sugoroku';
+const _kanaWritingKey = 'show_kana_writing';
 const _streakCountKey = 'streak_count';
 const _streakLastDateKey = 'streak_last_date';
 
@@ -419,6 +420,16 @@ class StorageService {
   }
   static void saveMathInSugoroku(bool v) {
     try { _localStorage.setItem(_mathInSugorokuKey, '$v'); } catch (_) {}
+  }
+
+  static bool loadKanaWritingEnabled() {
+    try {
+      final raw = _localStorage.getItem(_kanaWritingKey)?.toDart;
+      return raw == null || raw == 'true';
+    } catch (_) { return true; }
+  }
+  static void saveKanaWritingEnabled(bool v) {
+    try { _localStorage.setItem(_kanaWritingKey, '$v'); } catch (_) {}
   }
 
   // ─── ホームボーナス ───────────────────────────────────────────────────────────

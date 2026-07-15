@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import '../app_theme.dart';
+import '../data/hiragana_data.dart';
+import '../data/katakana_data.dart';
 import '../data/pokemon_data.dart';
 import '../services/pokemon_repository.dart';
 import '../services/storage_service.dart';
 import '../services/analytics_service.dart';
 import '../services/daily_stats_service.dart';
 import '../services/sound_service.dart';
+import '../widgets/drawing_canvas.dart';
 import '../widgets/pokemon_widgets.dart';
 import '../widgets/drill_widgets.dart';
 import 'drill_round_mixin.dart';
@@ -187,6 +190,8 @@ class _Quiz {
   final List<String> choices;
   final int correctIndex;
   final double choiceFontSize;
+  final bool isWriting;
+  final int writingStrokes;
 
   const _Quiz({
     required this.displayBig,
@@ -194,6 +199,8 @@ class _Quiz {
     required this.choices,
     required this.correctIndex,
     this.choiceFontSize = 36,
+    this.isWriting = false,
+    this.writingStrokes = 3,
   });
 }
 
@@ -223,20 +230,27 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
   bool _rewardVisible = true; // ゲットできるポケモンを表示するか
   bool _kokugoEnabled = true;
   bool _mathEnabled = true;
+  bool _writingEnabled = true;
   PokemonEntry? _playerBattlePokemon; // バトルに出す伝説ポケモン（報酬とは別）
 
   // ゾーン別問題タイプ定義（タイプ番号は _generateQuiz の switch と対応）
   // こくご: 0=ひら→カタ, 3=カタ→ひら, 5=反対語, 6=なかまはずれ, 7=語頭文字
   // さんすう: 1=足し算, 2=引き算, 4=応用計算(二桁/3数)
+  // 書き: 8=ひらがな書き, 9=カタカナ書き
   static const _kokugoByZone = [
-    [0],           // zone 0: ひら→カタのみ
-    [0, 3],        // zone 1: +カタ→ひら
-    [0, 3, 5, 6, 7], // zone 2: +反対語, なかまはずれ, 語頭文字
+    [0],              // zone 0: ひら→カタのみ
+    [0, 3],           // zone 1: +カタ→ひら
+    [0, 3, 5, 6, 7],  // zone 2: +反対語, なかまはずれ, 語頭文字
   ];
   static const _mathByZone = [
     [1, 2],        // zone 0: 足し算・引き算
     [1, 2],        // zone 1: 同じ（難易度は内部で上がる）
     [1, 2, 4],     // zone 2: +応用計算
+  ];
+  static const _writingByZone = [
+    <int>[],  // zone 0: なし
+    [8],      // zone 1: ひらがな書き
+    [8, 9],   // zone 2: +カタカナ書き
   ];
 
   @override
@@ -246,6 +260,7 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
     _rewardVisible = StorageService.loadBattleRewardVisible();
     _kokugoEnabled = StorageService.loadKokugoInBattle();
     _mathEnabled = StorageService.loadMathInBattle();
+    _writingEnabled = StorageService.loadKanaWritingEnabled();
     drillPickPendingPokemon(); // ゲットできる報酬ポケモン（ランダム）
     _pickPlayerBattlePokemon(); // バトルに出す伝説ポケモン
     _enemies = _pickEnemies();
@@ -287,8 +302,9 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
     final types = [
       if (_kokugoEnabled) ..._kokugoByZone[safeZone],
       if (_mathEnabled) ..._mathByZone[safeZone],
+      if (_writingEnabled) ..._writingByZone[safeZone],
     ];
-    // 両方OFFは設定画面で禁止しているが念のためフォールバック
+    // 全部OFFは設定画面で禁止しているが念のためフォールバック
     final pool = types.isNotEmpty ? types : _mathByZone[safeZone];
     final type = pool[drillRandom.nextInt(pool.length)];
     return switch (type) {
@@ -303,7 +319,9 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
         },
       5 => _generateHantaigo(),
       6 => _generateNakamahazure(),
-      _ => _generateGotouMoji(),
+      7 => _generateGotouMoji(),
+      8 => _generateHiraWrite(),
+      _ => _generateKataWrite(),
     };
   }
 
@@ -517,9 +535,37 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
     );
   }
 
+  _Quiz _generateHiraWrite() {
+    final allChars = hiraganaRows.expand((row) => row.chars).toList();
+    final char = allChars[drillRandom.nextInt(allChars.length)];
+    return _Quiz(
+      displayBig: char.char,
+      prompt: 'なぞって かいてみよう！',
+      choices: const [],
+      correctIndex: -1,
+      isWriting: true,
+      writingStrokes: char.strokeCount,
+    );
+  }
+
+  _Quiz _generateKataWrite() {
+    final allChars = katakanaRows.expand((row) => row.chars).toList();
+    final char = allChars[drillRandom.nextInt(allChars.length)];
+    return _Quiz(
+      displayBig: char.char,
+      prompt: 'なぞって かいてみよう！',
+      choices: const [],
+      correctIndex: -1,
+      isWriting: true,
+      writingStrokes: char.strokeCount,
+    );
+  }
+
   void _onAnswerTap(String choice) {
     if (_selectedChoice != null || _enemyFainting || _powerLevel >= 3) return;
-    final correct = choice == _currentQuiz.choices[_currentQuiz.correctIndex];
+    final correct = _currentQuiz.isWriting
+        ? choice == '__correct__'
+        : choice == _currentQuiz.choices[_currentQuiz.correctIndex];
     setState(() {
       _selectedChoice = choice;
       _feedbackCorrect = correct;
@@ -1124,96 +1170,121 @@ class _QuestionPanel extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Expanded(
-          flex: 3,
-          child: Center(
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-              decoration: BoxDecoration(
-                color: AppTheme.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.06),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
+        if (quiz.isWriting)
+          Expanded(
+            child: Center(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final size =
+                      (constraints.maxWidth * 0.7).clamp(160.0, 320.0);
+                  return SizedBox(
+                    width: size,
+                    height: size,
+                    child: DrawingCanvas(
+                      key: ValueKey('battle_write_${quiz.displayBig}'),
+                      character: quiz.displayBig,
+                      totalStrokes: quiz.writingStrokes,
+                      onComplete: selected == null
+                          ? (score) => onAnswerTap('__correct__')
+                          : null,
+                    ),
+                  );
+                },
+              ),
+            ),
+          )
+        else ...[
+          Expanded(
+            flex: 3,
+            child: Center(
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppTheme.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.06),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  quiz.displayBig,
+                  style: const TextStyle(
+                    fontSize: 64,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.darkText,
+                    height: 1.0,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 4,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: DrillChoiceButton(
+                            choice: quiz.choices[0],
+                            correct: quiz.choices[quiz.correctIndex],
+                            selected: selected,
+                            onTap: onAnswerTap,
+                            fontSize: quiz.choiceFontSize,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: DrillChoiceButton(
+                            choice: quiz.choices[1],
+                            correct: quiz.choices[quiz.correctIndex],
+                            selected: selected,
+                            onTap: onAnswerTap,
+                            fontSize: quiz.choiceFontSize,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: DrillChoiceButton(
+                            choice: quiz.choices[2],
+                            correct: quiz.choices[quiz.correctIndex],
+                            selected: selected,
+                            onTap: onAnswerTap,
+                            fontSize: quiz.choiceFontSize,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: DrillChoiceButton(
+                            choice: quiz.choices[3],
+                            correct: quiz.choices[quiz.correctIndex],
+                            selected: selected,
+                            onTap: onAnswerTap,
+                            fontSize: quiz.choiceFontSize,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
-              child: Text(
-                quiz.displayBig,
-                style: const TextStyle(
-                  fontSize: 64,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.darkText,
-                  height: 1.0,
-                ),
-              ),
             ),
           ),
-        ),
-        Expanded(
-          flex: 4,
-          child: Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Column(
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: DrillChoiceButton(
-                          choice: quiz.choices[0],
-                          correct: quiz.choices[quiz.correctIndex],
-                          selected: selected,
-                          onTap: onAnswerTap,
-                          fontSize: quiz.choiceFontSize,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: DrillChoiceButton(
-                          choice: quiz.choices[1],
-                          correct: quiz.choices[quiz.correctIndex],
-                          selected: selected,
-                          onTap: onAnswerTap,
-                          fontSize: quiz.choiceFontSize,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: DrillChoiceButton(
-                          choice: quiz.choices[2],
-                          correct: quiz.choices[quiz.correctIndex],
-                          selected: selected,
-                          onTap: onAnswerTap,
-                          fontSize: quiz.choiceFontSize,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: DrillChoiceButton(
-                          choice: quiz.choices[3],
-                          correct: quiz.choices[quiz.correctIndex],
-                          selected: selected,
-                          onTap: onAnswerTap,
-                          fontSize: quiz.choiceFontSize,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+        ],
       ],
     );
   }

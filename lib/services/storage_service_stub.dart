@@ -43,6 +43,8 @@ class StorageService {
   static void saveKokugoInSugoroku(bool value) {}
   static bool loadMathInSugoroku() => true;
   static void saveMathInSugoroku(bool value) {}
+  static bool loadKanaWritingEnabled() => true;
+  static void saveKanaWritingEnabled(bool value) {}
   static int loadStreakCount() => 0;
   static int recordPlayStreak() => 0;
   static int shinyBonusRemaining() => 0;

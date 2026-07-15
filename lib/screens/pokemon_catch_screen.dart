@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import '../app_theme.dart';
+import '../data/hiragana_data.dart';
+import '../data/katakana_data.dart';
 import '../data/pokemon_data.dart';
 import '../services/pokemon_repository.dart';
 import '../services/storage_service.dart';
 import '../services/analytics_service.dart';
 import '../services/daily_stats_service.dart';
 import '../services/sound_service.dart';
+import '../widgets/drawing_canvas.dart';
 import '../widgets/pokemon_widgets.dart';
 import 'drill_round_mixin.dart';
 
@@ -87,12 +90,16 @@ class _Quiz {
   final List<String> choices;
   final int correctIndex;
   final double choiceFontSize;
+  final bool isWriting;
+  final int writingStrokes;
   const _Quiz({
     required this.displayBig,
     required this.prompt,
     required this.choices,
     required this.correctIndex,
     this.choiceFontSize = 36,
+    this.isWriting = false,
+    this.writingStrokes = 3,
   });
 }
 
@@ -117,6 +124,7 @@ class _PokemonCatchScreenState extends State<PokemonCatchScreen>
   _Phase _phase = _Phase.answering;
   int _correctInBall = 0;
   int _missCount = 0;
+  bool _writingEnabled = true;
 
   late _Quiz _currentQuiz;
   String? _selectedAnswer;
@@ -141,6 +149,7 @@ class _PokemonCatchScreenState extends State<PokemonCatchScreen>
   void initState() {
     super.initState();
     drillInitPokemonState();
+    _writingEnabled = StorageService.loadKanaWritingEnabled();
     _initPokemon();
     _currentQuiz = _generateQuiz();
     _throwCtrl = AnimationController(
@@ -198,10 +207,16 @@ class _PokemonCatchScreenState extends State<PokemonCatchScreen>
 
   // こくご: 0=ひら→カタ, 3=カタ→ひら, 5=反対語, 6=なかまはずれ, 7=語頭文字
   // さんすう: 1=足し算, 2=引き算, 4=応用計算
+  // 書き: 8=ひらがな書き, 9=カタカナ書き
   static const _kokugoByZone = [
     [0],               // stage 0: ひら→カタのみ
     [0, 3],            // stage 1: +カタ→ひら
-    [0, 3, 5, 6, 7],   // stage 2: +反対語, なかまはずれ, 語頭文字
+    [0, 3, 5, 6, 7],  // stage 2: +反対語, なかまはずれ, 語頭文字
+  ];
+  static const _writingByZone = [
+    <int>[],  // stage 0: なし
+    [8],      // stage 1: ひらがな書き
+    [8, 9],   // stage 2: +カタカナ書き
   ];
   static const _mathByZone = [
     [1, 2],            // stage 0: 足し算・引き算
@@ -211,7 +226,11 @@ class _PokemonCatchScreenState extends State<PokemonCatchScreen>
 
   _Quiz _generateQuiz() {
     final zone = _stage.clamp(0, 2);
-    final types = [..._kokugoByZone[zone], ..._mathByZone[zone]];
+    final types = [
+      ..._kokugoByZone[zone],
+      ..._mathByZone[zone],
+      if (_writingEnabled) ..._writingByZone[zone],
+    ];
     final type = types[drillRandom.nextInt(types.length)];
     return switch (type) {
       0 => _generateHiraToKata(),
@@ -225,7 +244,9 @@ class _PokemonCatchScreenState extends State<PokemonCatchScreen>
         },
       5 => _generateHantaigo(),
       6 => _generateNakamahazure(),
-      _ => _generateGotouMoji(),
+      7 => _generateGotouMoji(),
+      8 => _generateHiraWrite(),
+      _ => _generateKataWrite(),
     };
   }
 
@@ -422,11 +443,39 @@ class _PokemonCatchScreenState extends State<PokemonCatchScreen>
     );
   }
 
+  _Quiz _generateHiraWrite() {
+    final allChars = hiraganaRows.expand((row) => row.chars).toList();
+    final char = allChars[drillRandom.nextInt(allChars.length)];
+    return _Quiz(
+      displayBig: char.char,
+      prompt: 'なぞって かいてみよう！',
+      choices: const [],
+      correctIndex: -1,
+      isWriting: true,
+      writingStrokes: char.strokeCount,
+    );
+  }
+
+  _Quiz _generateKataWrite() {
+    final allChars = katakanaRows.expand((row) => row.chars).toList();
+    final char = allChars[drillRandom.nextInt(allChars.length)];
+    return _Quiz(
+      displayBig: char.char,
+      prompt: 'なぞって かいてみよう！',
+      choices: const [],
+      correctIndex: -1,
+      isWriting: true,
+      writingStrokes: char.strokeCount,
+    );
+  }
+
   // ── 回答処理 ──
 
   void _onAnswer(String choice) {
     if (_selectedAnswer != null || _phase != _Phase.answering) return;
-    final isCorrect = choice == _currentQuiz.choices[_currentQuiz.correctIndex];
+    final isCorrect = _currentQuiz.isWriting
+        ? choice == '__correct__'
+        : choice == _currentQuiz.choices[_currentQuiz.correctIndex];
     if (isCorrect) SoundService.playStrokeComplete();
     setState(() => _selectedAnswer = choice);
     Future.delayed(const Duration(milliseconds: 650), () {
@@ -468,8 +517,15 @@ class _PokemonCatchScreenState extends State<PokemonCatchScreen>
             _catchTarget!.pokedexId == _stageA.pokedexId ? -0.22 : 0.22;
       }
     } else {
-      _catchTarget = null;
-      _throwOffsetX = drillRandom.nextBool() ? 0.35 : -0.35;
+      // ポケモンが逃げた演出: ボールをポケモン方向へ投げる
+      if (_stage == 2) {
+        _catchTarget = _stageC;
+        _throwOffsetX = 0.0;
+      } else {
+        _catchTarget = drillRandom.nextBool() ? _stageA : _stageB;
+        _throwOffsetX =
+            _catchTarget!.pokedexId == _stageA.pokedexId ? -0.22 : 0.22;
+      }
     }
 
     setState(() => _phase = _Phase.throwing);
@@ -490,6 +546,7 @@ class _PokemonCatchScreenState extends State<PokemonCatchScreen>
           setState(() {
             _phase = _Phase.answering;
             _selectedAnswer = null;
+            _catchTarget = null;
             _currentQuiz = _generateQuiz();
           });
         });
@@ -862,6 +919,39 @@ class _QuizContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (quiz.isWriting) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final canvasSize =
+              (constraints.maxWidth * 0.55).clamp(200.0, 380.0);
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                quiz.prompt,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 12, color: AppTheme.textGray),
+              ),
+              const SizedBox(height: 8),
+              Center(
+                child: SizedBox(
+                  width: canvasSize,
+                  height: canvasSize,
+                  child: DrawingCanvas(
+                    key: ValueKey('catch_write_${quiz.displayBig}'),
+                    character: quiz.displayBig,
+                    totalStrokes: quiz.writingStrokes,
+                    onComplete: (score) => onAnswer('__correct__'),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1124,38 +1214,54 @@ class _RightPanel extends StatelessWidget {
   }
 
   Widget _buildPhaseContent() {
-    if (phase == _Phase.answering || phase == _Phase.missed) {
+    if (phase == _Phase.answering) {
       return Center(
         child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (phase == _Phase.missed)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFF9900).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Text(
-                      'おしい！もう一かいチャレンジ！',
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFFFF9900)),
-                    ),
-                  ),
-                ),
-              _QuizContent(
-                quiz: quiz,
-                selectedAnswer: selectedAnswer,
-                onAnswer: onAnswer,
-              ),
-            ],
+          child: _QuizContent(
+            quiz: quiz,
+            selectedAnswer: selectedAnswer,
+            onAnswer: onAnswer,
           ),
+        ),
+      );
+    }
+
+    if (phase == _Phase.missed) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isSecretStage)
+              ColorFiltered(
+                colorFilter: const ColorFilter.mode(
+                    Color(0xFF1A1A2E), BlendMode.srcATop),
+                child: PokemonImage(
+                    pokemon: pokemon, size: 120, isShiny: false),
+              )
+            else
+              PokemonImage(pokemon: pokemon, size: 120, isShiny: false),
+            const SizedBox(height: 10),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF9900).withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                'ポケモンが ボールから でてしまった！',
+                style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFFF9900)),
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'もう一かい チャレンジ！',
+              style: TextStyle(fontSize: 12, color: AppTheme.textGray),
+            ),
+          ],
         ),
       );
     }
