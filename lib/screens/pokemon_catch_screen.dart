@@ -92,6 +92,7 @@ class _Quiz {
   final double choiceFontSize;
   final bool isWriting;
   final int writingStrokes;
+  final String? writingChar;
   const _Quiz({
     required this.displayBig,
     required this.prompt,
@@ -100,6 +101,7 @@ class _Quiz {
     this.choiceFontSize = 36,
     this.isWriting = false,
     this.writingStrokes = 3,
+    this.writingChar,
   });
 }
 
@@ -444,28 +446,36 @@ class _PokemonCatchScreenState extends State<PokemonCatchScreen>
   }
 
   _Quiz _generateHiraWrite() {
-    final allChars = hiraganaRows.expand((row) => row.chars).toList();
-    final char = allChars[drillRandom.nextInt(allChars.length)];
+    final pair = _kanaPairs[drillRandom.nextInt(_kanaPairs.length)];
+    final hiraChar = hiraganaRows
+        .expand((row) => row.chars)
+        .firstWhere((c) => c.char == pair.$1,
+            orElse: () => hiraganaRows.first.chars.first);
     return _Quiz(
-      displayBig: char.char,
-      prompt: 'なぞって かいてみよう！',
+      displayBig: pair.$2,
+      prompt: 'カタカナを みて ひらがなを かこう！',
       choices: const [],
       correctIndex: -1,
       isWriting: true,
-      writingStrokes: char.strokeCount,
+      writingChar: pair.$1,
+      writingStrokes: hiraChar.strokeCount,
     );
   }
 
   _Quiz _generateKataWrite() {
-    final allChars = katakanaRows.expand((row) => row.chars).toList();
-    final char = allChars[drillRandom.nextInt(allChars.length)];
+    final pair = _kanaPairs[drillRandom.nextInt(_kanaPairs.length)];
+    final kataChar = katakanaRows
+        .expand((row) => row.chars)
+        .firstWhere((c) => c.char == pair.$2,
+            orElse: () => katakanaRows.first.chars.first);
     return _Quiz(
-      displayBig: char.char,
-      prompt: 'なぞって かいてみよう！',
+      displayBig: pair.$1,
+      prompt: 'ひらがなを みて カタカナを かこう！',
       choices: const [],
       correctIndex: -1,
       isWriting: true,
-      writingStrokes: char.strokeCount,
+      writingChar: pair.$2,
+      writingStrokes: kataChar.strokeCount,
     );
   }
 
@@ -928,6 +938,25 @@ class _QuizContent extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 28, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppTheme.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFDDDDDD)),
+                ),
+                child: Text(
+                  quiz.displayBig,
+                  style: const TextStyle(
+                    fontSize: 64,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.darkText,
+                    height: 1.1,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 6),
               Text(
                 quiz.prompt,
                 textAlign: TextAlign.center,
@@ -939,9 +968,11 @@ class _QuizContent extends StatelessWidget {
                   width: canvasSize,
                   height: canvasSize,
                   child: DrawingCanvas(
-                    key: ValueKey('catch_write_${quiz.displayBig}'),
-                    character: quiz.displayBig,
+                    key: ValueKey(
+                        'catch_write_${quiz.writingChar ?? quiz.displayBig}'),
+                    character: quiz.writingChar ?? quiz.displayBig,
                     totalStrokes: quiz.writingStrokes,
+                    hideChar: true,
                     onComplete: (score) => onAnswer('__correct__'),
                   ),
                 ),

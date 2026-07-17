@@ -192,6 +192,7 @@ class _Quiz {
   final double choiceFontSize;
   final bool isWriting;
   final int writingStrokes;
+  final String? writingChar;
 
   const _Quiz({
     required this.displayBig,
@@ -201,6 +202,7 @@ class _Quiz {
     this.choiceFontSize = 36,
     this.isWriting = false,
     this.writingStrokes = 3,
+    this.writingChar,
   });
 }
 
@@ -536,28 +538,36 @@ class _BattleScreenState extends State<BattleScreen> with DrillRoundMixin {
   }
 
   _Quiz _generateHiraWrite() {
-    final allChars = hiraganaRows.expand((row) => row.chars).toList();
-    final char = allChars[drillRandom.nextInt(allChars.length)];
+    final pair = _kanaPairs[drillRandom.nextInt(_kanaPairs.length)];
+    final hiraChar = hiraganaRows
+        .expand((row) => row.chars)
+        .firstWhere((c) => c.char == pair.$1,
+            orElse: () => hiraganaRows.first.chars.first);
     return _Quiz(
-      displayBig: char.char,
-      prompt: 'なぞって かいてみよう！',
+      displayBig: pair.$2,
+      prompt: 'カタカナを みて ひらがなを かこう！',
       choices: const [],
       correctIndex: -1,
       isWriting: true,
-      writingStrokes: char.strokeCount,
+      writingChar: pair.$1,
+      writingStrokes: hiraChar.strokeCount,
     );
   }
 
   _Quiz _generateKataWrite() {
-    final allChars = katakanaRows.expand((row) => row.chars).toList();
-    final char = allChars[drillRandom.nextInt(allChars.length)];
+    final pair = _kanaPairs[drillRandom.nextInt(_kanaPairs.length)];
+    final kataChar = katakanaRows
+        .expand((row) => row.chars)
+        .firstWhere((c) => c.char == pair.$2,
+            orElse: () => katakanaRows.first.chars.first);
     return _Quiz(
-      displayBig: char.char,
-      prompt: 'なぞって かいてみよう！',
+      displayBig: pair.$1,
+      prompt: 'ひらがなを みて カタカナを かこう！',
       choices: const [],
       correctIndex: -1,
       isWriting: true,
-      writingStrokes: char.strokeCount,
+      writingChar: pair.$2,
+      writingStrokes: kataChar.strokeCount,
     );
   }
 
@@ -1172,25 +1182,63 @@ class _QuestionPanel extends StatelessWidget {
         const SizedBox(height: 8),
         if (quiz.isWriting)
           Expanded(
-            child: Center(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final size =
-                      (constraints.maxWidth * 0.7).clamp(160.0, 320.0);
-                  return SizedBox(
-                    width: size,
-                    height: size,
-                    child: DrawingCanvas(
-                      key: ValueKey('battle_write_${quiz.displayBig}'),
-                      character: quiz.displayBig,
-                      totalStrokes: quiz.writingStrokes,
-                      onComplete: selected == null
-                          ? (score) => onAnswerTap('__correct__')
-                          : null,
+            child: Column(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 32, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: AppTheme.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.06),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        quiz.displayBig,
+                        style: const TextStyle(
+                          fontSize: 64,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.darkText,
+                          height: 1.0,
+                        ),
+                      ),
                     ),
-                  );
-                },
-              ),
+                  ),
+                ),
+                Expanded(
+                  flex: 5,
+                  child: Center(
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final size =
+                            (constraints.maxWidth * 0.7).clamp(160.0, 320.0);
+                        return SizedBox(
+                          width: size,
+                          height: size,
+                          child: DrawingCanvas(
+                            key: ValueKey(
+                                'battle_write_${quiz.writingChar ?? quiz.displayBig}'),
+                            character: quiz.writingChar ?? quiz.displayBig,
+                            totalStrokes: quiz.writingStrokes,
+                            hideChar: true,
+                            onComplete: selected == null
+                                ? (score) => onAnswerTap('__correct__')
+                                : null,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ],
             ),
           )
         else ...[
